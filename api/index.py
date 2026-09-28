@@ -31,8 +31,15 @@ col_users     = db.users              if db is not None else None   # user displ
 col_msg_reactions = db.msg_reactions  if db is not None else None   # per-message reaction state
 
 # ── Sentiment & Mood ─────────────────────────────────────────────────────────
-POSITIVE_EMOJIS = {"❤️", "🔥", "🎉", "👍", "🥰", "👏", "🤩", "😍", "💯", "💖", "😂", "🤣", "😁", "🕊️", "🫡", "🙏", "🤝", "👌", "💋", "⚡", "🏆"}
-NEGATIVE_EMOJIS = {"👎", "💩", "🤬", "🤮", "🤡", "🖕", "💔", "😡", "🥱", "📉"}
+POSITIVE_EMOJIS = {
+    "❤️", "🔥", "🎉", "👍", "🥰", "👏", "🤩", "😍", "💯", "💖", 
+    "😂", "🤣", "😁", "🕊️", "🫡", "🙏", "🤝", "👌", "💋", "⚡", 
+    "🏆", "🤗", "🎅", "🎄", "☃", "🆒", "💘", "🦄", "😘", "😎"
+}
+NEGATIVE_EMOJIS = {
+    "👎", "💩", "🤬", "🤮", "🤡", "🖕", "💔", "😡", "🥱", "📉",
+    "😢", "😭", "😨", "😱"
+}
 
 # ── Gamification Roles ────────────────────────────────────────────────────────
 

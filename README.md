@@ -27,10 +27,10 @@ A real-time Telegram engagement leaderboard bot that tracks user reactions, rank
    - The Web Dashboard displays a beautiful **Mood Graph** over time and an overall sentiment score.
    - **Admin Alerts:** If a specific message receives a sudden spike in negative reactions, the bot automatically warns the group admins.
 
-5. **Anti-Bot & Clean Data**
+6. **Anti-Bot & Clean Data**
    - **Golden Rule:** Any user account ending in "bot" (e.g., GroupHelpBot) or flagged as a bot by Telegram is completely ignored. Bot reactions will never pollute the leaderboards.
 
-6. **Smart Name Resolution & UI/UX**
+7. **Smart Name Resolution & UI/UX**
    - Converts raw IDs into hyperlinked names.
    - Users without a @username are linked using native 	g://user?id= deep links.
    - Uses Telegram's native <blockquote expandable> to pack up to 50 users into a tiny, collapsible 3-line UI, preventing chat spam.
