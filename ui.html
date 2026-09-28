@@ -171,16 +171,33 @@
             const res = await fetch('/api/global_data');
             const data = await res.json();
             
+            // Save to local storage for instant loading next time
+            localStorage.setItem('reactMeterData', JSON.stringify(data));
+            
             document.getElementById('table-chats').innerHTML = renderRows(data.chats);
             lucide.createIcons();
         } catch (err) {
             console.error(err);
-            document.getElementById('table-chats').innerHTML = `<tr><td colspan="4" class="text-center py-8 text-red-500 font-medium">Unable to fetch data from API.</td></tr>`;
+            if (!localStorage.getItem('reactMeterData')) {
+                document.getElementById('table-chats').innerHTML = `<tr><td colspan="4" class="text-center py-8 text-red-500 font-medium">Unable to fetch data from API.</td></tr>`;
+            }
         }
       }
 
       window.onload = () => {
           gsap.to(".animate-on-load", { y: 0, opacity: 1, duration: 0.6, stagger: 0.15, ease: "power2.out" });
+          
+          // Load cached data instantly
+          const cachedData = localStorage.getItem('reactMeterData');
+          if (cachedData) {
+              try {
+                  const data = JSON.parse(cachedData);
+                  document.getElementById('table-chats').innerHTML = renderRows(data.chats);
+                  lucide.createIcons();
+              } catch (e) {}
+          }
+          
+          // Fetch fresh data in background
           syncData();
           setInterval(syncData, 30000);
       };
