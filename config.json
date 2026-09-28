@@ -1,0 +1,19 @@
+{
+  "siteName": "TelePulse Reaction Intelligence",
+  "botUsername": "dhyeyautofilterbot",
+  "description": "Track live Telegram emoji reactions, sentiment spikes, and viral channel velocity.",
+  "adsenseClientId": "ca-pub-0000000000000000",
+  "keywords": "Telegram, Reaction Tracker, Bot, Group Analytics, Leaderboard",
+  "heroTitle": "Global Leaderboard",
+  "heroSubtitle": "Real-time engagement index of the most active communities.",
+  "projects": [
+    {
+      "name": "Reaction Tracker",
+      "url": "https://tgreact.dhyey.cc/"
+    },
+    {
+      "name": "Other Project",
+      "url": "#"
+    }
+  ]
+}
