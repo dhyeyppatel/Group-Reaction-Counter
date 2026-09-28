@@ -40,6 +40,20 @@ NEGATIVE_EMOJIS = {
     "👎", "💩", "🤬", "🤮", "🤡", "🖕", "💔", "😡", "🥱", "📉",
     "😢", "😭", "😨", "😱"
 }
+EMOJI_LABELS = {
+    "❤️": "LOVE", "🥰": "LOVE", "😍": "LOVE", "💖": "LOVE", "💘": "LOVE", "😘": "LOVE",
+    "😂": "FUN", "🤣": "FUN", "😁": "FUN", "🤪": "FUN", "🤡": "FUN",
+    "🔥": "HYPE", "⚡": "HYPE", "💯": "HYPE", "🤩": "HYPE", "😎": "HYPE",
+    "🎉": "CELEBRATE", "👏": "APPLAUSE", "🏆": "VICTORY", "🍾": "CELEBRATE",
+    "👍": "AGREE", "👌": "AGREE", "🤝": "AGREEMENT", "🫡": "RESPECT", "🙏": "PRAYER",
+    "👎": "DISLIKE", "🖕": "HOSTILE", "📉": "DOWN",
+    "😮": "SURPRISE", "😱": "SHOCK", "🤯": "MIND BLOWN", "😨": "FEAR",
+    "😢": "SAD", "😭": "CRYING", "💔": "HEARTBREAK",
+    "😡": "ANGER", "🤬": "RAGE",
+    "💩": "TRASH", "🤮": "DISGUST", "🤢": "DISGUST",
+    "🥱": "BORED", "😴": "SLEEP", "😐": "NEUTRAL", "🆒": "COOL", "🦄": "MAGIC",
+    "🕊️": "PEACE", "💋": "KISS"
+}
 
 # ── Gamification Roles ────────────────────────────────────────────────────────
 
@@ -299,60 +313,62 @@ async def cmd_mood(message: types.Message):
             {"$match": {"user_id": "GLOBAL", "count": {"$gt": 0}}},
             {"$group": {"_id": "$reaction", "count": {"$sum": "$count"}}}
         ]))
-        title_text = "🌍 <b>Global Community Mood</b>"
+        title_text = "🌍 <b>GLOBAL COMMUNITY PULSE</b>"
     else:
         emoji_results = list(col_reactions.aggregate([
             {"$match": {"chat_id": message.chat.id, "user_id": "GLOBAL", "count": {"$gt": 0}}},
             {"$group": {"_id": "$reaction", "count": {"$sum": "$count"}}}
         ]))
-        title_text = f"📊 <b>Mood for {html.escape(message.chat.title or 'this group')}</b>"
+        title_text = f"📊 <b>COMMUNITY PULSE FOR {html.escape(message.chat.title or 'THIS GROUP').upper()}</b>"
         
-    pos = 0
-    neg = 0
-    neu = 0
-    
+    if not emoji_results:
+        await message.answer(f"╭─ {title_text} ─╮\n\nNo reactions recorded yet!\n╰───────────────────────╯", parse_mode="HTML")
+        return
+
+    # Group by labels for the bar chart
+    grouped = {}
     for r in emoji_results:
         emoji = r["_id"]
         count = r["count"]
-        if emoji in POSITIVE_EMOJIS:
-            pos += count
-        elif emoji in NEGATIVE_EMOJIS:
-            neg += count
-        else:
-            neu += count
-            
-    total = pos + neg + neu
-    if total == 0:
-        await message.answer(f"{title_text}\n\nNo reactions recorded yet!", parse_mode="HTML")
-        return
+        label = EMOJI_LABELS.get(emoji, "REACT")
+        if label not in grouped:
+            grouped[label] = {"count": 0, "emoji": emoji}
+        grouped[label]["count"] += count
         
+    sorted_items = sorted(grouped.items(), key=lambda x: x[1]["count"], reverse=True)
+    total_votes = sum(x[1]["count"] for x in sorted_items)
+    
+    lines = [f"╭─ {title_text} ─╮", "<blockquote><code>"]
+    
+    # Show top 5 labels
+    for label, data in sorted_items[:5]:
+        pct = (data["count"] / total_votes) * 100
+        # 100% -> 12 blocks max
+        bar_len = round(pct / (100/12))
+        bar = ("█" * bar_len).ljust(12, " ")
+        lbl = label.ljust(9, " ")
+        pct_str = f"{int(pct)}%".rjust(4, " ")
+        lines.append(f"  {data['emoji']}  {lbl} {bar} {pct_str}")
+        
+    lines.append("</code></blockquote>")
+    
+    # Overall Vibe
+    pos = sum(r["count"] for r in emoji_results if r["_id"] in POSITIVE_EMOJIS)
+    neg = sum(r["count"] for r in emoji_results if r["_id"] in NEGATIVE_EMOJIS)
     total_sentiment = pos + neg
-    score = round((pos / total_sentiment * 100) if total_sentiment > 0 else 0, 1)
+    score = (pos / total_sentiment * 100) if total_sentiment > 0 else 0
     
     if score >= 80:
-        mood_emoji = "🟢"
-        mood_text = "Highly Positive! ✨"
+        vibe = "HIGHLY POSITIVE ✨"
     elif score >= 50:
-        mood_emoji = "🟡"
-        mood_text = "Mixed/Neutral ⚖️"
+        vibe = "MIXED / NEUTRAL ⚖️"
     elif total_sentiment == 0:
-        mood_emoji = "⚪"
-        mood_text = "Neutral (No strong sentiment) 😐"
+        vibe = "NEUTRAL 😐"
     else:
-        mood_emoji = "🔴"
-        mood_text = "Negative! ⚠️"
-
-    lines = [
-        title_text,
-        f"<b>Positivity Score:</b> {score}%",
-        f"<b>Overall Vibe:</b> {mood_emoji} {mood_text}",
-        "",
-        f"❤️ <b>Positive:</b> {pos:,}",
-        f"🤬 <b>Negative:</b> {neg:,}",
-        f"😐 <b>Neutral:</b> {neu:,}",
-        "",
-        "<i>Check the web dashboard for a full Mood Line Graph!</i>"
-    ]
+        vibe = "NEGATIVE ⚠️"
+        
+    lines.append(f"  ✦ Overall vibe: {vibe}")
+    lines.append("╰────────────────────────────────╯")
     
     await message.answer("\n".join(lines), parse_mode="HTML")
 
