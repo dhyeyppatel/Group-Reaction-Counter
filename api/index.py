@@ -1,5 +1,6 @@
 import os
 from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import Update
 from aiogram.filters import Command
@@ -150,3 +151,127 @@ async def setup_webhook(request: Request):
         return {"status": "success", "message": f"Webhook securely set to {webhook_url} with reactions enabled!"}
     else:
         return {"status": "error", "message": "Failed to set webhook. Check your BOT_TOKEN."}
+
+@app.get("/api/stats_data")
+async def api_stats_data():
+    """Returns JSON data for the web UI."""
+    if not col_reactions:
+        return {"error": "Database not configured"}
+        
+    pipeline = [
+        {"$match": {"user_id": {"$exists": False}}},
+        {"$match": {"count": {"$gt": 0}}},
+        {"$group": {"_id": "$reaction", "count": {"$sum": "$count"}}},
+        {"$sort": {"count": -1}}
+    ]
+    results = list(col_reactions.aggregate(pipeline))
+    return {"data": [{"emoji": r["_id"], "count": r["count"]} for r in results]}
+
+@app.get("/")
+async def serve_ui():
+    """Serves a beautiful Glassmorphism dashboard."""
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="en" class="dark">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Reaction Tracker Dashboard</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+        <style>
+            body {
+                font-family: 'Outfit', sans-serif;
+                background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+                color: #f8fafc;
+                min-height: 100vh;
+            }
+            .glass-card {
+                background: rgba(255, 255, 255, 0.05);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            }
+            .glow-text {
+                text-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+            }
+            .bar-fill {
+                background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%);
+                box-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
+                transition: width 1s ease-out;
+            }
+        </style>
+    </head>
+    <body class="flex items-center justify-center p-6">
+        <div class="w-full max-w-3xl glass-card rounded-3xl p-8 md:p-12">
+            <div class="text-center mb-10">
+                <h1 class="text-4xl md:text-5xl font-bold mb-4 glow-text bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
+                    Live Reaction Stats
+                </h1>
+                <p class="text-slate-400 text-lg">Real-time Telegram engagement leaderboard</p>
+            </div>
+
+            <div id="stats-container" class="space-y-6">
+                <div class="flex justify-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            async function fetchStats() {
+                try {
+                    const res = await fetch('/api/stats_data');
+                    const data = await res.json();
+                    
+                    const container = document.getElementById('stats-container');
+                    container.innerHTML = '';
+                    
+                    if (data.error || !data.data || data.data.length === 0) {
+                        container.innerHTML = '<p class="text-center text-slate-400 text-lg mt-8">No reactions tracked yet. Go react to some messages!</p>';
+                        return;
+                    }
+                    
+                    const maxCount = Math.max(...data.data.map(d => d.count));
+                    
+                    data.data.forEach((item, index) => {
+                        const percentage = (item.count / maxCount) * 100;
+                        const emojiChar = item.emoji.startsWith('custom_') ? '🌟' : item.emoji;
+                        
+                        const row = document.createElement('div');
+                        row.className = 'bg-slate-800/40 rounded-xl p-5 border border-slate-700/50 hover:bg-slate-800/80 transition-all duration-300 transform hover:-translate-y-1';
+                        row.innerHTML = `
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center space-x-4">
+                                    <div class="text-4xl drop-shadow-lg">${emojiChar}</div>
+                                    <span class="text-xl font-semibold text-slate-200">Rank #${index + 1}</span>
+                                </div>
+                                <span class="text-3xl font-bold text-purple-400">${item.count}</span>
+                            </div>
+                            <div class="w-full bg-slate-900/50 rounded-full h-3 overflow-hidden">
+                                <div class="bar-fill rounded-full h-3" style="width: 0%"></div>
+                            </div>
+                        `;
+                        container.appendChild(row);
+                        
+                        // Trigger animation
+                        setTimeout(() => {
+                            row.querySelector('.bar-fill').style.width = `${percentage}%`;
+                        }, 50 * (index + 1));
+                    });
+                    
+                } catch (err) {
+                    console.error(err);
+                    document.getElementById('stats-container').innerHTML = '<p class="text-center text-red-400">Failed to load stats.</p>';
+                }
+            }
+            
+            fetchStats();
+            // Refresh every 5 seconds
+            setInterval(fetchStats, 5000);
+        </script>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
