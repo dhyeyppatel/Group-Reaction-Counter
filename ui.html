@@ -7,44 +7,30 @@
     <meta name="description" content="%%DESCRIPTION%%"/>
     <meta name="keywords" content="%%KEYWORDS%%"/>
     
-    <!-- Fonts: Fira Sans for UI, Fira Code for Data -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
-            fontFamily: {
-              sans: ['"Fira Sans"', 'sans-serif'],
-              mono: ['"Fira Code"', 'monospace'],
-            },
+            fontFamily: { sans: ['"Fira Sans"', 'sans-serif'], mono: ['"Fira Code"', 'monospace'] },
             colors: {
-              primary: '#1E40AF', // Deep blue
-              secondary: '#3B82F6',
-              accent: '#D97706', // Amber
-              background: '#F8FAFC',
-              card: '#FFFFFF',
-              border: '#DBEAFE',
-              muted: '#E9EEF6',
+              primary: '#1E40AF', secondary: '#3B82F6', accent: '#D97706',
+              background: '#F8FAFC', card: '#FFFFFF', border: '#DBEAFE', muted: '#E9EEF6'
             }
           }
         }
       }
     </script>
     
-    <!-- GSAP for animations -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <!-- Lucide for Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- AdSense -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=%%ADSENSE_CLIENT_ID%%" crossorigin="anonymous"></script>
 
     <style>
-      /* Clean subtle shadow for cards */
       .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); }
       .data-row { transition: all 0.2s ease-in-out; }
       .data-row:hover { background-color: #F1F5F9; transform: translateX(4px); }
@@ -52,7 +38,6 @@
 </head>
 <body class="min-h-screen flex flex-col font-sans">
     
-    <!-- Navbar -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center gap-2">
@@ -67,73 +52,45 @@
         </div>
     </header>
 
-    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        <!-- Hero Section -->
+    <main class="flex-grow max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         <div class="mb-10 animate-on-load opacity-0 translate-y-4">
             <h2 class="text-3xl font-bold text-slate-900 mb-2">Global Reaction Leaderboard</h2>
             <p class="text-slate-600 max-w-2xl">Real-time engagement telemetry. This dashboard tracks organic reactions across all public and private Telegram communities monitored by our bot.</p>
         </div>
 
-        <!-- AdSense Slot (Configured) -->
         <div class="w-full bg-slate-100 border border-slate-200 rounded-md p-2 mb-8 text-center text-xs text-slate-400 min-h-[90px] flex flex-col justify-center animate-on-load opacity-0 translate-y-4">
             <span>Advertisement</span>
             <ins class="adsbygoogle block mt-1" data-ad-client="%%ADSENSE_CLIENT_ID%%" data-ad-slot="1234567890" data-ad-format="auto" data-full-width-responsive="true"></ins>
             <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
         </div>
 
-        <!-- Dashboard Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Top Groups -->
-            <section class="animate-on-load opacity-0 translate-y-4">
-                <div class="flex items-center gap-2 mb-4">
-                    <i data-lucide="users" class="w-5 h-5 text-slate-600"></i>
-                    <h3 class="text-xl font-semibold text-slate-800">Top Groups</h3>
+        <div class="animate-on-load opacity-0 translate-y-4">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="activity" class="w-5 h-5 text-slate-600"></i>
+                    <h3 class="text-xl font-semibold text-slate-800">Top Communities</h3>
                 </div>
-                <div class="bg-white border border-slate-200 rounded-lg overflow-hidden card-shadow">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm whitespace-nowrap">
-                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium">
-                                <tr>
-                                    <th class="py-3 px-4 w-16 text-center">Rank</th>
-                                    <th class="py-3 px-4">Group Name</th>
-                                    <th class="py-3 px-4 text-right">Total Reactions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100" id="table-groups">
-                                <tr><td colspan="3" class="text-center py-8 text-slate-400">Syncing data...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-lg overflow-hidden card-shadow">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium">
+                            <tr>
+                                <th class="py-3 px-4 w-16 text-center">Rank</th>
+                                <th class="py-3 px-4">Community Name</th>
+                                <th class="py-3 px-4">Type</th>
+                                <th class="py-3 px-4 text-right">Total Reactions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100" id="table-chats">
+                            <tr><td colspan="4" class="text-center py-8 text-slate-400">Syncing data...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
-            </section>
-
-            <!-- Top Channels -->
-            <section class="animate-on-load opacity-0 translate-y-4">
-                <div class="flex items-center gap-2 mb-4">
-                    <i data-lucide="megaphone" class="w-5 h-5 text-slate-600"></i>
-                    <h3 class="text-xl font-semibold text-slate-800">Top Channels</h3>
-                </div>
-                <div class="bg-white border border-slate-200 rounded-lg overflow-hidden card-shadow">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm whitespace-nowrap">
-                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium">
-                                <tr>
-                                    <th class="py-3 px-4 w-16 text-center">Rank</th>
-                                    <th class="py-3 px-4">Channel Name</th>
-                                    <th class="py-3 px-4 text-right">Total Reactions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100" id="table-channels">
-                                <tr><td colspan="3" class="text-center py-8 text-slate-400">Syncing data...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
+            </div>
         </div>
     </main>
 
-    <!-- Footer with legal links -->
     <footer class="bg-slate-900 text-slate-400 py-10 mt-auto">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
@@ -142,6 +99,7 @@
                     <span class="font-bold text-slate-200">%%SITE_NAME%%</span>
                 </div>
                 <p class="text-sm">Organic Telegram community engagement analytics.</p>
+                <p class="text-sm mt-2 text-slate-500">Developed by <a href="https://t.me/commonthread" target="_blank" class="text-slate-300 hover:text-white underline">@commonthread</a></p>
             </div>
             <div>
                 <h4 class="font-semibold text-slate-200 mb-4">Legal & Privacy</h4>
@@ -164,42 +122,42 @@
         </div>
     </footer>
 
-    <!-- Scripts -->
     <script>
-      // Initialize Lucide Icons
       lucide.createIcons();
 
-      // Escape HTML helper
       function esc(s) {
         return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
       }
 
-      // Render Table Rows
-      function renderRows(arr, emptyMsg, type) {
+      function renderRows(arr) {
         if (!arr || arr.length === 0) {
-            return `<tr><td colspan="3" class="text-center py-12 text-slate-400 flex flex-col items-center"><i data-lucide="database" class="w-8 h-8 mb-2 opacity-50"></i> ${emptyMsg}</td></tr>`;
+            return `<tr><td colspan="4" class="text-center py-12 text-slate-400 flex flex-col items-center"><i data-lucide="database" class="w-8 h-8 mb-2 opacity-50"></i> No active communities found.</td></tr>`;
         }
         return arr.map((item, i) => {
-            // Ranking indicator
             let rankHtml = `<span class="text-slate-500 font-medium">${i+1}</span>`;
             if (i === 0) rankHtml = `<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 text-amber-700 font-bold text-xs">1</span>`;
             else if (i === 1) rankHtml = `<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-200 text-slate-700 font-bold text-xs">2</span>`;
             else if (i === 2) rankHtml = `<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-100 text-orange-800 font-bold text-xs">3</span>`;
 
-            // Title with optional link
             let titleHtml = esc(item.title);
             if (item.url) {
                 titleHtml = `<a href="${esc(item.url)}" target="_blank" class="text-primary hover:underline flex items-center gap-1.5 font-medium">${esc(item.title)} <i data-lucide="external-link" class="w-3 h-3 text-slate-400"></i></a>`;
             }
+
+            let typeIcon = item.type === 'channel' ? 'megaphone' : 'users';
+            let typeLabel = item.type === 'channel' ? 'Channel' : 'Group';
 
             return `
             <tr class="data-row border-b border-slate-50 last:border-0">
                 <td class="py-3 px-4 text-center">${rankHtml}</td>
                 <td class="py-3 px-4">
                     <div class="flex items-center gap-2">
-                        <i data-lucide="${type === 'group' ? 'users' : 'megaphone'}" class="w-4 h-4 text-slate-400"></i>
+                        <i data-lucide="${typeIcon}" class="w-4 h-4 text-slate-400"></i>
                         ${titleHtml}
                     </div>
+                </td>
+                <td class="py-3 px-4 text-slate-500 text-xs uppercase tracking-wide font-medium">
+                    ${typeLabel}
                 </td>
                 <td class="py-3 px-4 text-right">
                     <span class="font-mono text-slate-700 bg-slate-100 px-2 py-1 rounded text-sm font-medium border border-slate-200">${item.total.toLocaleString()}</span>
@@ -208,37 +166,23 @@
         }).join('');
       }
 
-      // Fetch and populate data
       async function syncData() {
         try {
             const res = await fetch('/api/global_data');
             const data = await res.json();
             
-            document.getElementById('table-groups').innerHTML = renderRows(data.groups, "No active groups found.", "group");
-            document.getElementById('table-channels').innerHTML = renderRows(data.channels, "No active channels found.", "channel");
-            
-            // Re-init icons for newly injected HTML
+            document.getElementById('table-chats').innerHTML = renderRows(data.chats);
             lucide.createIcons();
         } catch (err) {
             console.error(err);
-            const errHtml = `<tr><td colspan="3" class="text-center py-8 text-red-500 font-medium">Unable to fetch data from API.</td></tr>`;
-            document.getElementById('table-groups').innerHTML = errHtml;
-            document.getElementById('table-channels').innerHTML = errHtml;
+            document.getElementById('table-chats').innerHTML = `<tr><td colspan="4" class="text-center py-8 text-red-500 font-medium">Unable to fetch data from API.</td></tr>`;
         }
       }
 
-      // GSAP Initial Animations
       window.onload = () => {
-          gsap.to(".animate-on-load", {
-              y: 0,
-              opacity: 1,
-              duration: 0.6,
-              stagger: 0.15,
-              ease: "power2.out"
-          });
-          
+          gsap.to(".animate-on-load", { y: 0, opacity: 1, duration: 0.6, stagger: 0.15, ease: "power2.out" });
           syncData();
-          setInterval(syncData, 30000); // 30s polling
+          setInterval(syncData, 30000);
       };
     </script>
 </body>

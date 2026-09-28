@@ -195,12 +195,32 @@ async def on_message_reaction_count(update: types.MessageReactionCountUpdated):
         )
 
 
+
+@dp.message(Command("reset_db"))
+async def cmd_reset_db(message: types.Message):
+    admin_id = int(os.getenv("ADMIN_ID", 0))
+    if message.from_user.id != admin_id and admin_id != 0:
+        await message.reply("You are not authorized to use this command.")
+        return
+    if db is None:
+        await message.reply("Database is not connected.")
+        return
+        
+    try:
+        col_reactions.delete_many({})
+        col_chats.delete_many({})
+        col_msg_reactions.delete_many({})
+        await message.reply("✅ Full database has been completely reset/cleared.")
+    except Exception as e:
+        await message.reply(f"Error clearing database: {e}")
+
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     await message.answer(
         "👋 <b>Welcome to Reaction Tracker Bot!</b>\n\n"
         "I am the ultimate gamification and analytics bot for your Telegram communities! "
         "I track reactions, create beautiful leaderboards, and turn engagement into a fun game with unlockable roles.\n\n"
+        "<i>Developer Credits:</i> <a href='https://t.me/commonthread'>@commonthread</a>\n\n"
         "<i>What would you like to explore?</i>",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
@@ -1046,8 +1066,7 @@ async def api_global_data():
         {"$limit": 50}
     ]))
 
-    groups = []
-    channels = []
+    combined = []
     for r in results:
         chat_id = r["_id"]
         doc     = col_chats.find_one({"chat_id": chat_id}, {"_id": 0})
@@ -1064,21 +1083,22 @@ async def api_global_data():
         if doc and doc.get("active") is False:
             continue
             
-        entry   = {"chat_id": chat_id, "total": r["total"], "title": str(chat_id), "url": None}
-        chat_type = "supergroup"
+        chat_type = "group"
+        entry   = {"chat_id": chat_id, "total": r["total"], "title": str(chat_id), "url": None, "type": chat_type}
+        
         if doc:
             entry["title"]    = doc.get("title", str(chat_id))
             username          = doc.get("username")
             invite            = doc.get("invite_link")
             entry["url"]      = f"https://t.me/{username}" if username else invite
-            chat_type         = doc.get("type", "supergroup")
+            if doc.get("type") == "channel":
+                entry["type"] = "channel"
             
-        if chat_type == "channel":
-            channels.append(entry)
-        else:
-            groups.append(entry)
+        combined.append(entry)
 
-    return {"groups": groups[:20], "channels": channels[:20]}
+    # Sort combined list
+    combined.sort(key=lambda x: x["total"], reverse=True)
+    return {"chats": combined[:20]}
 
 
 @app.get("/api/group_data/{chat_id}")
@@ -1210,7 +1230,7 @@ async def cron_wrapped():
 async def serve_ui():
     try:
         bot_info = await bot.get_me()
-        bot_username = bot_info.username
+        "dhyeyautofilterbot" = bot_info.username
     except Exception:
         bot_username = "dhyeyautofilterbot"
         
@@ -1271,7 +1291,7 @@ async def privacy_policy():
   <p><a href="/">Back to Leaderboard</a></p>
 </body>
 </html>"""
-    return HTMLResponse(content=html.replace("BOT_USERNAME_PLACEHOLDER", bot_username))
+    return HTMLResponse(content=html)
 
 @app.get("/terms")
 async def terms_conditions():
@@ -1288,7 +1308,7 @@ async def terms_conditions():
   <p><a href="/">Back to Leaderboard</a></p>
 </body>
 </html>"""
-    return HTMLResponse(content=html.replace("BOT_USERNAME_PLACEHOLDER", bot_username))
+    return HTMLResponse(content=html)
 
 @app.get("/data")
 async def data_collection():
@@ -1311,4 +1331,4 @@ async def data_collection():
   <p><a href="/">Back to Leaderboard</a></p>
 </body>
 </html>"""
-    return HTMLResponse(content=html.replace("BOT_USERNAME_PLACEHOLDER", bot_username))
+    return HTMLResponse(content=html)
