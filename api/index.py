@@ -6,6 +6,7 @@ from aiogram.types import Update
 from aiogram.filters import Command
 from pymongo import MongoClient
 import html
+import datetime
 
 try:
     from api.themes import THEMES
@@ -28,6 +29,10 @@ col_reactions = db.reactions          if db is not None else None   # per-user &
 col_chats     = db.chats              if db is not None else None   # group/channel metadata
 col_users     = db.users              if db is not None else None   # user display names
 col_msg_reactions = db.msg_reactions  if db is not None else None   # per-message reaction state
+
+# ── Sentiment & Mood ─────────────────────────────────────────────────────────
+POSITIVE_EMOJIS = {"❤️", "🔥", "🎉", "👍", "🥰", "👏", "🤩", "😍", "💯", "💖", "😂", "🤣", "😁", "🕊️", "🫡", "🙏", "🤝", "👌", "💋", "⚡", "🏆"}
+NEGATIVE_EMOJIS = {"👎", "💩", "🤬", "🤮", "🤡", "🖕", "💔", "😡", "🥱", "📉"}
 
 # ── Gamification Roles ────────────────────────────────────────────────────────
 
@@ -506,12 +511,32 @@ async def on_reaction(reaction: types.MessageReactionUpdated):
             {"chat_id": chat_id, "reaction": r, "user_id": user_id},
             {"$inc": {"count": 1}}, upsert=True
         )
-        # Store per-message reaction for raffles
+        # Store per-message reaction for raffles and mood graph
         if col_msg_reactions is not None:
             col_msg_reactions.update_one(
                 {"chat_id": chat_id, "message_id": reaction.message_id, "user_id": user_id, "reaction": r},
-                {"$set": {"active": True}}, upsert=True
+                {"$set": {"active": True, "date": reaction.date.isoformat()}}, upsert=True
             )
+            
+            # Sentiment Alert Check
+            if r in NEGATIVE_EMOJIS:
+                neg_count = col_msg_reactions.count_documents({
+                    "chat_id": chat_id, 
+                    "message_id": reaction.message_id, 
+                    "reaction": {"$in": list(NEGATIVE_EMOJIS)},
+                    "active": True
+                })
+                # Alert at exactly 10 to avoid spamming
+                if neg_count == 10:
+                    alert_text = (
+                        "⚠️ <b>Admin Alert: High Negative Sentiment</b>\n"
+                        "A message in this group has suddenly received a high number of negative reactions.\n"
+                        f"<a href='https://t.me/c/{str(chat_id).replace('-100', '')}/{reaction.message_id}'>Go to message</a>"
+                    )
+                    try:
+                        await bot.send_message(chat_id, alert_text, parse_mode="HTML")
+                    except Exception:
+                        pass
 
     for r in removed:
         col_reactions.update_one(
@@ -911,6 +936,34 @@ async def serve_ui():
         html += '</div>';
       }
 
+      // Sentiment Section
+      if (data.sentiment && (data.sentiment.positive > 0 || data.sentiment.negative > 0)) {
+        html += '<p class="section-title">Community Mood</p>';
+        html += '<div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 15px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">';
+        
+        let scoreColor = data.sentiment.score >= 80 ? '#4ade80' : (data.sentiment.score >= 50 ? '#fbbf24' : '#ef4444');
+        
+        html += '<div>';
+        html += '<div style="font-size: 0.9rem; color: var(--muted);">Positivity Score</div>';
+        html += '<div style="font-size: 1.8rem; font-weight: 700; color: '+scoreColor+';">' + data.sentiment.score + '%</div>';
+        html += '</div>';
+        
+        html += '<div style="text-align: right;">';
+        html += '<div style="font-size: 0.85rem; color: var(--muted); margin-bottom: 4px;">❤️ Positive: <span style="color:#fff;">'+data.sentiment.positive+'</span></div>';
+        html += '<div style="font-size: 0.85rem; color: var(--muted); margin-bottom: 4px;">🤬 Negative: <span style="color:#fff;">'+data.sentiment.negative+'</span></div>';
+        html += '<div style="font-size: 0.85rem; color: var(--muted);">😐 Neutral: <span style="color:#fff;">'+data.sentiment.neutral+'</span></div>';
+        html += '</div>';
+        html += '</div>';
+      }
+
+      // Mood Chart
+      if (data.mood_chart && data.mood_chart.length > 0) {
+        html += '<p class="section-title">Mood Over Time (Last 7 Days)</p>';
+        html += '<div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 15px; margin-bottom: 20px;">';
+        html += '<canvas id="moodChart" height="150"></canvas>';
+        html += '</div>';
+      }
+
       if (data.users && data.users.length > 0) {
         const medals = ['🥇','🥈','🥉'];
         html += '<p class="section-title">Top Reactors</p>';
@@ -929,6 +982,43 @@ async def serve_ui():
 
       if (!html) { el.innerHTML = '<div class="empty">No reactions yet in this group.</div>'; return; }
       el.innerHTML = html;
+      
+      // Render Chart
+      if (data.mood_chart && data.mood_chart.length > 0) {
+        const ctx = document.getElementById('moodChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.mood_chart.map(d => d.date.substring(5)),
+                datasets: [
+                    {
+                        label: 'Positive',
+                        data: data.mood_chart.map(d => d.positive),
+                        borderColor: '#4ade80',
+                        backgroundColor: 'rgba(74, 222, 128, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Negative',
+                        data: data.mood_chart.map(d => d.negative),
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: 'rgba(255,255,255,0.7)' } } },
+                scales: {
+                    x: { ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    y: { ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                }
+            }
+        });
+      }
 
       requestAnimationFrame(() => {
         document.querySelectorAll('.bar-fill[data-pct]').forEach((b,i) => {

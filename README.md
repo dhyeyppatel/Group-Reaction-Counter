@@ -20,6 +20,12 @@ A real-time Telegram engagement leaderboard bot that tracks user reactions, rank
 4. **Gamification & Custom Titles**
    - Users unlock exclusive titles based on their total reaction count (e.g., 100+ = Trend Setter 💫).
    - Titles are proudly displayed in both the `/stats` Telegram leaderboard and the web dashboard!
+   - Admins can customize the theme using `/themes` (e.g., Space, Gaming, Chaotic) or create custom roles with `/setrole`.
+
+5. **Sentiment Analysis & Mood Tracking**
+   - Automatically categorizes emojis into Positive (❤️, 🔥), Negative (👎, 🤬), and Neutral.
+   - The Web Dashboard displays a beautiful **Mood Graph** over time and an overall sentiment score.
+   - **Admin Alerts:** If a specific message receives a sudden spike in negative reactions, the bot automatically warns the group admins.
 
 5. **Anti-Bot & Clean Data**
    - **Golden Rule:** Any user account ending in "bot" (e.g., GroupHelpBot) or flagged as a bot by Telegram is completely ignored. Bot reactions will never pollute the leaderboards.
