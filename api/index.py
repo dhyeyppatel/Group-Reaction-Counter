@@ -22,6 +22,29 @@ app = FastAPI()
 bot = Bot(token=BOT_TOKEN)
 dp  = Dispatcher()
 
+@app.on_event("startup")
+async def on_startup():
+    from aiogram.types import BotCommand
+    commands = [
+        BotCommand(command="start", description="Start the bot and see the menu"),
+        BotCommand(command="stats", description="View your personal stats in the group"),
+        BotCommand(command="show", description="Show the top 50 group leaderboard"),
+        BotCommand(command="roles", description="View all unlockable gamification titles"),
+        BotCommand(command="themes", description="(Admin) View available themes"),
+        BotCommand(command="settheme", description="(Admin) Change the leaderboard theme"),
+        BotCommand(command="setrole", description="(Admin) Set custom milestone roles"),
+        BotCommand(command="mood", description="View the group's emotional pulse graph"),
+        BotCommand(command="top", description="Discover the most highly reacted message today"),
+        BotCommand(command="setinvite", description="(Admin) Attach a group invite link for the dashboard"),
+        BotCommand(command="forcewrapped", description="(Admin) Trigger the Weekly Wrapped report"),
+        BotCommand(command="audit", description="(PM) Get an engagement audit for a group"),
+        BotCommand(command="uncover", description="Reply to pick a winner from reactions")
+    ]
+    try:
+        await bot.set_my_commands(commands)
+    except Exception as e:
+        print(f"Failed to set bot commands: {e}")
+
 # ── MongoDB ──────────────────────────────────────────────────────────────────
 client        = MongoClient(MONGO_URI) if MONGO_URI else None
 db            = client.reaction_bot   if client is not None else None
