@@ -22,6 +22,7 @@ db            = client.reaction_bot   if client is not None else None
 col_reactions = db.reactions          if db is not None else None   # per-user & global reaction counts
 col_chats     = db.chats              if db is not None else None   # group/channel metadata
 col_users     = db.users              if db is not None else None   # user display names
+col_msg_reactions = db.msg_reactions  if db is not None else None   # per-message reaction state
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -267,6 +268,75 @@ async def cmd_setinvite(message: types.Message):
     await message.answer("Invite link saved! Your group now appears as a clickable link in the Global Leaderboard.")
 
 
+@dp.message(Command("raffle"))
+async def cmd_raffle(message: types.Message):
+    """Pick a random winner from reactions on a replied message."""
+    if message.chat.type == "private":
+        await message.answer("This command must be used in a group.")
+        return
+
+    member = await bot.get_chat_member(message.chat.id, message.from_user.id)
+    if member.status not in ("administrator", "creator"):
+        await message.answer("❌ Only group admins can run a raffle.")
+        return
+
+    if not message.reply_to_message:
+        await message.answer("❌ You must reply to the giveaway message with <code>/raffle</code>.", parse_mode="HTML")
+        return
+
+    if col_msg_reactions is None:
+        await message.answer("Database is not configured.")
+        return
+
+    # Parse args: /raffle [count] [emoji]
+    parts = message.text.split()
+    count = 1
+    target_emoji = None
+    
+    for part in parts[1:]:
+        if part.isdigit():
+            count = min(int(part), 50)
+        else:
+            target_emoji = part
+
+    chat_id = message.chat.id
+    msg_id = message.reply_to_message.message_id
+
+    query = {"chat_id": chat_id, "message_id": msg_id, "active": True}
+    if target_emoji:
+        query["reaction"] = target_emoji
+        
+    pipeline = [
+        {"$match": query},
+        {"$sample": {"size": count}}
+    ]
+    winners_docs = list(col_msg_reactions.aggregate(pipeline))
+    
+    if not winners_docs:
+        if target_emoji:
+            await message.answer(f"No one has reacted with {target_emoji} to that message yet!")
+        else:
+            await message.answer("No one has reacted to that message yet!")
+        return
+
+    lines = ["🎉 <b>Giveaway Winner(s)!</b> 🎉\n"]
+    for doc in winners_docs:
+        w_id = doc["user_id"]
+        w_react = doc["reaction"]
+        info = await resolve_user(w_id, bot)
+        display = html.escape(info.get("display_name", str(w_id)))
+        uname = info.get("username")
+        
+        if uname:
+            name_part = f'<a href="https://t.me/{uname}">{display}</a>'
+        else:
+            name_part = f'<a href="tg://user?id={w_id}">{display}</a>'
+            
+        lines.append(f"🏆 {name_part} (Reacted with {w_react})")
+
+    await message.answer("\n".join(lines), parse_mode="HTML")
+
+
 @dp.message_reaction()
 async def on_reaction(reaction: types.MessageReactionUpdated):
     if col_reactions is None:
@@ -302,6 +372,12 @@ async def on_reaction(reaction: types.MessageReactionUpdated):
             {"chat_id": chat_id, "reaction": r, "user_id": user_id},
             {"$inc": {"count": 1}}, upsert=True
         )
+        # Store per-message reaction for raffles
+        if col_msg_reactions is not None:
+            col_msg_reactions.update_one(
+                {"chat_id": chat_id, "message_id": reaction.message_id, "user_id": user_id, "reaction": r},
+                {"$set": {"active": True}}, upsert=True
+            )
 
     for r in removed:
         col_reactions.update_one(
@@ -312,6 +388,12 @@ async def on_reaction(reaction: types.MessageReactionUpdated):
             {"chat_id": chat_id, "reaction": r, "user_id": user_id},
             {"$inc": {"count": -1}}
         )
+        # Deactivate per-message reaction
+        if col_msg_reactions is not None:
+            col_msg_reactions.update_one(
+                {"chat_id": chat_id, "message_id": reaction.message_id, "user_id": user_id, "reaction": r},
+                {"$set": {"active": False}}
+            )
 
 
 # ── Webhook & Utility Endpoints ───────────────────────────────────────────────
