@@ -155,6 +155,46 @@ async def resolve_user(uid, bot_instance=None) -> dict:
 
 # ── Bot Handlers ─────────────────────────────────────────────────────────────
 
+@dp.my_chat_member()
+async def on_my_chat_member(update: types.ChatMemberUpdated):
+    if update.new_chat_member.status in ["left", "kicked"]:
+        if col_chats is not None:
+            col_chats.update_one({"chat_id": update.chat.id}, {"$set": {"active": False}})
+    elif update.new_chat_member.status in ["member", "administrator", "restricted"]:
+        save_chat_meta(update.chat)
+        if col_chats is not None:
+            col_chats.update_one({"chat_id": update.chat.id}, {"$set": {"active": True}})
+
+@dp.message_reaction_count()
+async def on_message_reaction_count(update: types.MessageReactionCountUpdated):
+    # This fires for channels and anonymous reactions.
+    if col_msg_reactions is None: return
+    chat_id = update.chat.id
+    msg_id = update.message_id
+    
+    save_chat_meta(update.chat)
+    
+    # In channels, we just track the total counts per reaction emoji for the channel
+    # We will use "CHANNEL_ANON" as user_id.
+    for rxn in update.reactions:
+        emoji = rxn.type.emoji if rxn.type.type == "emoji" else rxn.type.custom_emoji_id
+        count = rxn.total_count
+        
+        # Upsert the count directly (since we don't get delta, we get total)
+        col_reactions.update_one(
+            {"chat_id": chat_id, "user_id": "GLOBAL", "reaction": emoji},
+            {"$set": {"count": count}},
+            upsert=True
+        )
+        
+        # For msg_reactions, just record an event to keep the message "active"
+        col_msg_reactions.update_one(
+            {"chat_id": chat_id, "message_id": msg_id, "user_id": "CHANNEL_ANON", "reaction": emoji},
+            {"$set": {"date": update.date.isoformat(), "active": True}},
+            upsert=True
+        )
+
+
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     await message.answer(
@@ -167,7 +207,7 @@ async def cmd_start(message: types.Message):
             [InlineKeyboardButton(text="📖 How to Use", callback_data="help_how")],
             [InlineKeyboardButton(text="👥 Group Commands", callback_data="help_group"),
              InlineKeyboardButton(text="👤 PM Commands", callback_data="help_pm")],
-            [InlineKeyboardButton(text="🏆 Global Leaderboard", url="https://group-reaction-counter-pi.vercel.app/")],
+            [InlineKeyboardButton(text="🏆 Global Leaderboard", url="https://tgreact.dhyey.cc/")],
             [InlineKeyboardButton(text="ℹ️ Privacy & Credits", callback_data="help_privacy")]
         ])
     )
@@ -228,7 +268,7 @@ async def process_help_callbacks(callback_query: CallbackQuery):
             [InlineKeyboardButton(text="📖 How to Use", callback_data="help_how")],
             [InlineKeyboardButton(text="👥 Group Commands", callback_data="help_group"),
              InlineKeyboardButton(text="👤 PM Commands", callback_data="help_pm")],
-            [InlineKeyboardButton(text="🏆 Global Leaderboard", url="https://group-reaction-counter-pi.vercel.app/")],
+            [InlineKeyboardButton(text="🏆 Global Leaderboard", url="https://tgreact.dhyey.cc/")],
             [InlineKeyboardButton(text="ℹ️ Privacy & Credits", callback_data="help_privacy")]
         ])
         await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=keyboard)
@@ -469,10 +509,17 @@ async def cmd_audit(message: types.Message):
         if target.startswith("@"):
             chat_doc = col_chats.find_one({"username": {"$regex": f"^{target.replace('@', '')}$", "$options": "i"}})
             if not chat_doc:
-                await message.answer(f"I don't have any data for {target}. Make sure I am an admin in that group/channel!")
-                return
-            chat_id = chat_doc["chat_id"]
-            target_name = target
+                try:
+                    chat = await bot.get_chat(target)
+                    save_chat_meta(chat)
+                    chat_id = chat.id
+                    target_name = target
+                except Exception:
+                    await message.answer(f"I don't have any data for {target}. Make sure I am an admin in that group/channel!")
+                    return
+            else:
+                chat_id = chat_doc["chat_id"]
+                target_name = target
         elif target.startswith("http"):
             chat_doc = col_chats.find_one({"invite_link": target})
             if not chat_doc:
@@ -968,7 +1015,7 @@ async def setup_webhook(request: Request):
     webhook_url = f"https://{request.headers.get('host')}/api/webhook"
     allowed_updates = [
         "message", "edited_message", "callback_query",
-        "inline_query", "message_reaction", "message_reaction_count"
+        "inline_query", "message_reaction", "message_reaction_count", "my_chat_member"
     ]
     success = await bot.set_webhook(
         url=webhook_url,
@@ -984,7 +1031,6 @@ async def setup_webhook(request: Request):
 
 @app.get("/api/global_data")
 async def api_global_data():
-    """Global group leaderboard — mirrors /show command."""
     if col_reactions is None or col_chats is None:
         return {"error": "Database not configured"}
 
@@ -992,10 +1038,11 @@ async def api_global_data():
         {"$match": {"user_id": "GLOBAL", "count": {"$gt": 0}}},
         {"$group": {"_id": "$chat_id", "total": {"$sum": "$count"}}},
         {"$sort": {"total": -1}},
-        {"$limit": 20}
+        {"$limit": 50}
     ]))
 
     groups = []
+    channels = []
     for r in results:
         chat_id = r["_id"]
         doc     = col_chats.find_one({"chat_id": chat_id}, {"_id": 0})
@@ -1008,15 +1055,25 @@ async def api_global_data():
             except Exception:
                 pass
                 
+        # Don't show inactive chats on dashboard
+        if doc and doc.get("active") is False:
+            continue
+            
         entry   = {"chat_id": chat_id, "total": r["total"], "title": str(chat_id), "url": None}
+        chat_type = "supergroup"
         if doc:
             entry["title"]    = doc.get("title", str(chat_id))
             username          = doc.get("username")
             invite            = doc.get("invite_link")
             entry["url"]      = f"https://t.me/{username}" if username else invite
-        groups.append(entry)
+            chat_type         = doc.get("type", "supergroup")
+            
+        if chat_type == "channel":
+            channels.append(entry)
+        else:
+            groups.append(entry)
 
-    return {"groups": groups}
+    return {"groups": groups[:20], "channels": channels[:20]}
 
 
 @app.get("/api/group_data/{chat_id}")
@@ -1146,6 +1203,11 @@ async def cron_wrapped():
 
 @app.get("/")
 async def serve_ui():
+    try:
+        bot_info = await bot.get_me()
+        bot_username = bot_info.username
+    except Exception:
+        bot_username = "dhyeyautofilterbot"
     html = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1183,7 +1245,7 @@ async def serve_ui():
       <h1 class="text-2xl font-bold tracking-tight text-white">TelePulse</h1>
     </div>
     <div>
-      <a href="http://t.me/dhyeyautofilterbot?startgroup=start" target="_blank" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/10 text-white px-5 py-2.5 rounded-lg font-medium transition-all">
+      <a href="http://t.me/BOT_USERNAME_PLACEHOLDER?startgroup=start" target="_blank" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/10 text-white px-5 py-2.5 rounded-lg font-medium transition-all">
         <i data-lucide="plus-circle" class="w-4 h-4"></i> Add to Telegram
       </a>
     </div>
@@ -1202,21 +1264,47 @@ async def serve_ui():
     </div>
   </div>
 
-  <div class="glass-card rounded-2xl overflow-hidden shadow-2xl">
-    <div class="overflow-x-auto custom-scroll">
-      <table class="w-full text-left border-collapse whitespace-nowrap">
-        <thead>
-          <tr class="border-b border-white/5 bg-white/5 text-gray-400 text-xs uppercase tracking-wider font-semibold">
-            <th class="py-5 px-6 text-center w-20">Rank</th>
-            <th class="py-5 px-6">Community</th>
-            <th class="py-5 px-6">Status</th>
-            <th class="py-5 px-6 text-right">Reactions</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-white/5 text-sm" id="leaderboard-body">
-          <tr><td colspan="4" class="text-center py-16 text-gray-500"><div class="flex flex-col items-center gap-3 justify-center"><i data-lucide="loader-2" class="w-6 h-6 animate-spin"></i> Loading telemetry...</div></td></tr>
-        </tbody>
-      </table>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- Groups -->
+    <div>
+      <h3 class="text-2xl font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="users" class="w-6 h-6 text-indigo-400"></i> Top Groups</h3>
+      <div class="glass-card rounded-2xl overflow-hidden shadow-2xl">
+        <div class="overflow-x-auto custom-scroll">
+          <table class="w-full text-left border-collapse whitespace-nowrap">
+            <thead>
+              <tr class="border-b border-white/5 bg-white/5 text-gray-400 text-xs uppercase tracking-wider font-semibold">
+                <th class="py-4 px-4 text-center w-16">Rank</th>
+                <th class="py-4 px-4">Group</th>
+                <th class="py-4 px-4 text-right">Reactions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5 text-sm" id="leaderboard-groups">
+              <tr><td colspan="3" class="text-center py-12 text-gray-500">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Channels -->
+    <div>
+      <h3 class="text-2xl font-bold text-white mb-4 flex items-center gap-2"><i data-lucide="megaphone" class="w-6 h-6 text-pink-400"></i> Top Channels</h3>
+      <div class="glass-card rounded-2xl overflow-hidden shadow-2xl">
+        <div class="overflow-x-auto custom-scroll">
+          <table class="w-full text-left border-collapse whitespace-nowrap">
+            <thead>
+              <tr class="border-b border-white/5 bg-white/5 text-gray-400 text-xs uppercase tracking-wider font-semibold">
+                <th class="py-4 px-4 text-center w-16">Rank</th>
+                <th class="py-4 px-4">Channel</th>
+                <th class="py-4 px-4 text-right">Reactions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5 text-sm" id="leaderboard-channels">
+              <tr><td colspan="3" class="text-center py-12 text-gray-500">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 </main>
@@ -1241,43 +1329,41 @@ async def serve_ui():
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
   
-  async function loadGlobal() {
-    const el = document.getElementById('leaderboard-body');
-    try {
-      const data = await fetch('/api/global_data').then(r=>r.json());
-      if (!data.groups || data.groups.length === 0) {
-        el.innerHTML = '<tr><td colspan="4" class="text-center py-16 text-gray-500"><div class="flex flex-col items-center gap-3 justify-center"><i data-lucide="inbox" class="w-6 h-6"></i> No data found. Add the bot to a group!</div></td></tr>';
-        lucide.createIcons();
-        return;
-      }
-      
-      const rows = data.groups.map((g, i) => {
-        let rankClass = "w-10 h-10 mx-auto rounded-xl bg-white/5 border border-white/10 text-gray-300 flex items-center justify-center font-bold text-lg";
-        if (i===0) rankClass = "w-10 h-10 mx-auto rounded-xl bg-gradient-to-tr from-yellow-600/30 to-yellow-400/20 border border-yellow-500/50 text-yellow-400 flex items-center justify-center font-bold text-lg shadow-[0_0_20px_rgba(234,179,8,0.3)]";
-        if (i===1) rankClass = "w-10 h-10 mx-auto rounded-xl bg-gradient-to-tr from-slate-400/30 to-slate-300/20 border border-slate-400/50 text-slate-300 flex items-center justify-center font-bold text-lg shadow-[0_0_20px_rgba(148,163,184,0.3)]";
-        if (i===2) rankClass = "w-10 h-10 mx-auto rounded-xl bg-gradient-to-tr from-orange-700/30 to-orange-500/20 border border-orange-500/50 text-orange-400 flex items-center justify-center font-bold text-lg shadow-[0_0_20px_rgba(249,115,22,0.3)]";
+  function renderRows(arr, emptyMsg) {
+    if (!arr || arr.length === 0) return `<tr><td colspan="3" class="text-center py-12 text-gray-500">${emptyMsg}</td></tr>`;
+    return arr.map((g, i) => {
+        let rankClass = "w-8 h-8 mx-auto rounded-lg bg-white/5 border border-white/10 text-gray-300 flex items-center justify-center font-bold";
+        if (i===0) rankClass = "w-8 h-8 mx-auto rounded-lg bg-gradient-to-tr from-yellow-600/30 to-yellow-400/20 border border-yellow-500/50 text-yellow-400 flex items-center justify-center font-bold shadow-[0_0_15px_rgba(234,179,8,0.3)]";
+        if (i===1) rankClass = "w-8 h-8 mx-auto rounded-lg bg-gradient-to-tr from-slate-400/30 to-slate-300/20 border border-slate-400/50 text-slate-300 flex items-center justify-center font-bold shadow-[0_0_15px_rgba(148,163,184,0.3)]";
+        if (i===2) rankClass = "w-8 h-8 mx-auto rounded-lg bg-gradient-to-tr from-orange-700/30 to-orange-500/20 border border-orange-500/50 text-orange-400 flex items-center justify-center font-bold shadow-[0_0_15px_rgba(249,115,22,0.3)]";
         
         let rankBadge = `<div class="${rankClass}">${i+1}</div>`;
-        let titleHtml = g.url ? `<a href="${g.url}" target="_blank" class="font-bold text-lg text-white hover:text-blue-400 transition-colors flex items-center gap-2">${esc(g.title)} <i data-lucide="external-link" class="w-4 h-4 text-gray-500"></i></a>` : `<span class="font-bold text-lg text-white">${esc(g.title)}</span>`;
-        let pubBadge = g.url ? `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"><i data-lucide="globe" class="w-3 h-3"></i> Public</span>` : `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/5 text-gray-400 border border-white/10"><i data-lucide="lock" class="w-3 h-3"></i> Private</span>`;
+        let titleHtml = g.url ? `<a href="${g.url}" target="_blank" class="font-bold text-base text-white hover:text-blue-400 transition-colors flex items-center gap-1">${esc(g.title)} <i data-lucide="external-link" class="w-3 h-3 text-gray-500"></i></a>` : `<span class="font-bold text-base text-white">${esc(g.title)}</span>`;
         
         return `<tr class="hover:bg-white/5 transition-colors group">
-          <td class="py-5 px-6 text-center">${rankBadge}</td>
-          <td class="py-5 px-6">${titleHtml}</td>
-          <td class="py-5 px-6">${pubBadge}</td>
-          <td class="py-5 px-6 text-right">
-            <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg bg-white/5 text-white font-mono text-base font-medium border border-white/10 group-hover:bg-purple-500/20 group-hover:border-purple-500/30 group-hover:text-purple-300 transition-colors">
-              <i data-lucide="activity" class="w-4 h-4"></i> ${g.total.toLocaleString()}
+          <td class="py-4 px-4 text-center">${rankBadge}</td>
+          <td class="py-4 px-4">${titleHtml}</td>
+          <td class="py-4 px-4 text-right">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-white/5 text-white font-mono text-sm border border-white/10 group-hover:bg-purple-500/20 group-hover:border-purple-500/30 group-hover:text-purple-300 transition-colors">
+              ${g.total.toLocaleString()}
             </span>
           </td>
         </tr>`;
-      });
-      el.innerHTML = rows.join('');
+    }).join('');
+  }
+
+  async function loadGlobal() {
+    const elGroups = document.getElementById('leaderboard-groups');
+    const elChannels = document.getElementById('leaderboard-channels');
+    try {
+      const data = await fetch('/api/global_data').then(r=>r.json());
+      elGroups.innerHTML = renderRows(data.groups, "No groups found.");
+      elChannels.innerHTML = renderRows(data.channels, "No channels found.");
       lucide.createIcons();
     } catch(e) {
       console.error(e);
-      el.innerHTML = '<tr><td colspan="4" class="text-center py-16 text-red-400"><div class="flex flex-col items-center gap-3 justify-center"><i data-lucide="alert-triangle" class="w-6 h-6"></i> Failed to load telemetry.</div></td></tr>';
-      lucide.createIcons();
+      elGroups.innerHTML = '<tr><td colspan="3" class="text-center py-12 text-red-400">Failed to load</td></tr>';
+      elChannels.innerHTML = '<tr><td colspan="3" class="text-center py-12 text-red-400">Failed to load</td></tr>';
     }
   }
   document.addEventListener("DOMContentLoaded", () => {
@@ -1287,7 +1373,7 @@ async def serve_ui():
 </script>
 </body>
 </html>"""
-    return HTMLResponse(content=html)
+    return HTMLResponse(content=html.replace("BOT_USERNAME_PLACEHOLDER", bot_username))
 
 
 @app.get("/privacy")
@@ -1309,7 +1395,7 @@ async def privacy_policy():
   <p><a href="/">Back to Leaderboard</a></p>
 </body>
 </html>"""
-    return HTMLResponse(content=html)
+    return HTMLResponse(content=html.replace("BOT_USERNAME_PLACEHOLDER", bot_username))
 
 @app.get("/terms")
 async def terms_conditions():
@@ -1326,7 +1412,7 @@ async def terms_conditions():
   <p><a href="/">Back to Leaderboard</a></p>
 </body>
 </html>"""
-    return HTMLResponse(content=html)
+    return HTMLResponse(content=html.replace("BOT_USERNAME_PLACEHOLDER", bot_username))
 
 @app.get("/data")
 async def data_collection():
@@ -1349,4 +1435,4 @@ async def data_collection():
   <p><a href="/">Back to Leaderboard</a></p>
 </body>
 </html>"""
-    return HTMLResponse(content=html)
+    return HTMLResponse(content=html.replace("BOT_USERNAME_PLACEHOLDER", bot_username))

@@ -104,6 +104,7 @@ These commands are meant to be used in a direct message with the bot.
 ## 🛠 Technical Details
 
 - **Tech Stack:** Python 3.9+, FastAPI, aiogram v3, Motor/PyMongo.
-- **Database:** MongoDB Atlas (4 collections: eactions, chats, users, msg_reactions).
+- **Database:** MongoDB Atlas (4 collections: 
+eactions, chats, users, msg_reactions).
 - **Serverless:** Built to handle the stateless, spin-down nature of Vercel. Global connections are cached, and the Webhook endpoint securely parses Telegram updates and feeds them directly into the aiogram Dispatcher.
 - **Data Caching:** The bot aggressively caches chat and user metadata. If the cache is wiped or missing, it gracefully falls back to wait bot.get_chat() to fetch the real-time display name and username before rendering leaderboards.
