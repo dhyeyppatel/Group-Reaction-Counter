@@ -66,6 +66,7 @@ A real-time Telegram engagement leaderboard bot that tracks user reactions, rank
 *Lists all the unlockable reaction titles.*
 - **Who can use it:** Anyone.
 - **Output:** A beautiful list of requirements to reach the next tier (e.g., 500+ for Community Pillar 🏛️).
+- **Auto-Announcements:** When you hit a milestone, the bot will automatically drop a celebratory message in the group AND send you a private PM to congratulate you on your new role!
 
 ### 5. /themes (Group Command)
 *Lists all available Gamification themes (e.g., Anime, Gaming, Crypto).*

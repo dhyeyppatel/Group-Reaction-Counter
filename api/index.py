@@ -29,6 +29,7 @@ col_reactions = db.reactions          if db is not None else None   # per-user &
 col_chats     = db.chats              if db is not None else None   # group/channel metadata
 col_users     = db.users              if db is not None else None   # user display names
 col_msg_reactions = db.msg_reactions  if db is not None else None   # per-message reaction state
+col_milestones = db.milestones        if db is not None else None   # tracks awarded milestones
 
 # ── Sentiment & Mood ─────────────────────────────────────────────────────────
 POSITIVE_EMOJIS = {
@@ -632,6 +633,52 @@ async def on_reaction(reaction: types.MessageReactionUpdated):
                         await bot.send_message(chat_id, alert_text, parse_mode="HTML")
                     except Exception:
                         pass
+
+    if added and col_milestones is not None:
+        try:
+            total_cursor = col_reactions.aggregate([
+                {"$match": {"chat_id": chat_id, "user_id": user_id}},
+                {"$group": {"_id": None, "total": {"$sum": "$count"}}}
+            ])
+            user_total = 0
+            for doc in total_cursor:
+                user_total = doc["total"]
+                
+            if user_total > 0:
+                chat_doc = col_chats.find_one({"chat_id": chat_id}, {"_id": 0}) if col_chats is not None else None
+                roles = get_roles_for_chat(chat_doc)
+                
+                thresholds = [r[0] for r in roles if r[0] > 0]
+                if user_total in thresholds:
+                    doc_id = f"{chat_id}_{user_id}_{user_total}"
+                    if not col_milestones.find_one({"_id": doc_id}):
+                        col_milestones.insert_one({"_id": doc_id, "date": datetime.datetime.utcnow().isoformat()})
+                        
+                        new_title = get_title(user_total, roles)
+                        info = await resolve_user(user_id, bot)
+                        display = html.escape(info.get("display_name", str(user_id)))
+                        uname = info.get("username")
+                        
+                        if uname:
+                            user_link = f'<a href="https://t.me/{uname}">{display}</a>'
+                        else:
+                            user_link = f'<a href="tg://user?id={user_id}">{display}</a>'
+                            
+                        group_name = html.escape(reaction.chat.title or "the group")
+                        
+                        group_msg = f"🎉 <b>Level Up!</b>\n{user_link} just reached <b>{user_total}</b> reactions and unlocked the title:\n\n🏆 <b>{new_title}</b>"
+                        try:
+                            await bot.send_message(chat_id, group_msg, parse_mode="HTML")
+                        except Exception:
+                            pass
+                            
+                        pm_msg = f"🎉 <b>Congratulations!</b>\nYou just reached <b>{user_total}</b> reactions in <b>{group_name}</b> and unlocked a new role!\n\n🏆 <b>{new_title}</b>"
+                        try:
+                            await bot.send_message(user_id, pm_msg, parse_mode="HTML")
+                        except Exception:
+                            pass
+        except Exception as e:
+            print(f"Error processing milestones: {e}")
 
     for r in removed:
         col_reactions.update_one(
