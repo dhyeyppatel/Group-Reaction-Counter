@@ -16,6 +16,9 @@ app = FastAPI()
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
+# Debug: Store last 5 updates
+recent_updates = []
+
 # Cache MongoDB connection outside the handler for warm starts
 client = MongoClient(MONGO_URI) if MONGO_URI else None
 db = client.reaction_bot if client is not None else None
@@ -118,15 +121,30 @@ async def telegram_webhook(request: Request):
     """
     try:
         update_data = await request.json()
+        
+        # Debug logging
+        recent_updates.insert(0, update_data)
+        if len(recent_updates) > 5:
+            recent_updates.pop()
+            
         # Parse Telegram JSON into aiogram Update model
         update = Update(**update_data)
         
         # Feed the update into aiogram's dispatcher
         await dp.feed_update(bot, update)
     except Exception as e:
-        print(f"Error processing update: {e}")
+        import traceback
+        error_msg = f"Error processing update: {e}\n{traceback.format_exc()}"
+        recent_updates.insert(0, {"ERROR": error_msg})
+        if len(recent_updates) > 5:
+            recent_updates.pop()
+        print(error_msg)
         
     return {"status": "ok"}
+
+@app.get("/api/debug_logs")
+async def debug_logs():
+    return {"logs": recent_updates}
 
 @app.get("/api/setup_webhook")
 async def setup_webhook(request: Request):
