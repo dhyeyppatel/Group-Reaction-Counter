@@ -937,7 +937,79 @@ async def api_group_data(chat_id: int):
     }
 
 
-# ── Web Dashboard ─────────────────────────────────────────────────────────────
+# ── Web Dashboard & Cron ─────────────────────────────────────────────────────────────
+
+@app.get("/api/cron/wrapped")
+async def cron_wrapped():
+    if col_msg_reactions is None:
+        return {"error": "DB not configured"}
+        
+    # Last 7 days
+    seven_days_ago = (datetime.datetime.utcnow() - datetime.timedelta(days=7)).isoformat()
+    
+    # 1. Total reactions per chat
+    total_cur = col_msg_reactions.aggregate([
+        {"$match": {"active": True, "date": {"$gte": seven_days_ago}}},
+        {"$group": {"_id": "$chat_id", "total": {"$sum": 1}}}
+    ])
+    totals = {doc["_id"]: doc["total"] for doc in total_cur}
+    
+    if not totals:
+        return {"status": "no data"}
+        
+    # 2. MVP per chat (user with most reactions)
+    mvp_cur = col_msg_reactions.aggregate([
+        {"$match": {"active": True, "date": {"$gte": seven_days_ago}}},
+        {"$group": {"_id": {"chat_id": "$chat_id", "user_id": "$user_id"}, "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$group": {"_id": "$_id.chat_id", "mvp": {"$first": "$_id.user_id"}, "mvp_count": {"$first": "$count"}}}
+    ])
+    mvps = {doc["_id"]: {"user_id": doc["mvp"], "count": doc["mvp_count"]} for doc in mvp_cur}
+    
+    # 3. Fav emoji per chat
+    fav_cur = col_msg_reactions.aggregate([
+        {"$match": {"active": True, "date": {"$gte": seven_days_ago}}},
+        {"$group": {"_id": {"chat_id": "$chat_id", "reaction": "$reaction"}, "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$group": {"_id": "$_id.chat_id", "fav": {"$first": "$_id.reaction"}}}
+    ])
+    favs = {doc["_id"]: doc["fav"] for doc in fav_cur}
+    
+    results = []
+    
+    for chat_id, total_rxn in totals.items():
+        if chat_id not in mvps or chat_id not in favs:
+            continue
+            
+        mvp_data = mvps[chat_id]
+        fav_emoji = favs[chat_id]
+        
+        # Get MVP display
+        info = await resolve_user(mvp_data["user_id"], bot)
+        display = html.escape(info.get("display_name", str(mvp_data["user_id"])))
+        uname = info.get("username")
+        mvp_link = f'<a href="https://t.me/{uname}">{display}</a>' if uname else f'<a href="tg://user?id={mvp_data["user_id"]}">{display}</a>'
+        
+        # Get Chat Title
+        chat_doc = col_chats.find_one({"chat_id": chat_id}) if col_chats is not None else None
+        chat_title = html.escape(chat_doc.get("title", "this group")) if chat_doc else "this group"
+        
+        msg = (
+            "🎁 <b>WEEKLY WRAPPED</b> 🎁\n\n"
+            f"This week, <b>{chat_title}</b> had <b>{total_rxn:,}</b> reactions!\n"
+            f"👑 <b>The MVP was {mvp_link}</b> ({mvp_data['count']} reactions).\n"
+            f"🔥 <b>Our favorite emoji this week was {fav_emoji}!</b>\n\n"
+            "<i>Keep reacting to climb the leaderboards next week!</i>"
+        )
+        
+        try:
+            await bot.send_message(chat_id, msg, parse_mode="HTML")
+            results.append({"chat_id": chat_id, "status": "sent"})
+        except Exception as e:
+            results.append({"chat_id": chat_id, "status": f"failed: {e}"})
+            
+    return {"status": "ok", "processed": len(totals), "results": results}
+
 
 @app.get("/")
 async def serve_ui():

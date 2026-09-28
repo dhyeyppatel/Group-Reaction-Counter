@@ -32,8 +32,13 @@ A real-time Telegram engagement leaderboard bot that tracks user reactions, rank
 
 7. **Smart Name Resolution & UI/UX**
    - Converts raw IDs into hyperlinked names.
-   - Users without a @username are linked using native 	g://user?id= deep links.
-   - Uses Telegram's native <blockquote expandable> to pack up to 50 users into a tiny, collapsible 3-line UI, preventing chat spam.
+   - Users without a @username are linked using native `tg://user?id=` deep links.
+   - Uses Telegram's native `<blockquote expandable>` to pack up to 50 users into a tiny, collapsible 3-line UI, preventing chat spam.
+
+8. **Automated Weekly "Wrapped" Reports**
+   - Think "Spotify Wrapped" but for Telegram communities!
+   - Every Sunday night, the bot automatically broadcasts a gorgeous summary to the group.
+   - Highlights the Total Weekly Reactions, crowns the Weekly MVP, and reveals the group's Favorite Emoji!
 
 ---
 
