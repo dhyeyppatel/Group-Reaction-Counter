@@ -70,13 +70,30 @@ def save_user_meta(user):
     )
 
 
-def resolve_user(uid) -> dict:
-    """Return display info for a user_id from cache."""
+async def resolve_user(uid, bot_instance=None) -> dict:
+    """Return display info for a user_id from cache, fallback to API."""
     if col_users is None:
         return {"display_name": str(uid), "username": None}
     doc = col_users.find_one({"user_id": uid}, {"_id": 0})
     if doc:
         return doc
+    
+    if bot_instance:
+        try:
+            chat = await bot_instance.get_chat(uid)
+            full = (chat.first_name or "")
+            if getattr(chat, "last_name", None):
+                full += f" {chat.last_name}"
+            doc = {
+                "user_id": uid,
+                "display_name": full.strip() or str(uid),
+                "username": getattr(chat, "username", None)
+            }
+            col_users.update_one({"user_id": uid}, {"$set": doc}, upsert=True)
+            return doc
+        except Exception:
+            pass
+            
     return {"display_name": str(uid), "username": None}
 
 
@@ -142,11 +159,19 @@ async def cmd_stats(message: types.Message):
         medals = ["🥇", "🥈", "🥉"]
         lines.append("🏆 **Top Reactors in this Group:**")
         for i, u in enumerate(user_results):
-            info    = resolve_user(u["_id"])
+            user_id = u["_id"]
+            info    = await resolve_user(user_id, bot)
             uname   = info.get("username")
-            display = f"@{uname}" if uname else info.get("display_name", str(u["_id"]))
+            display = info.get("display_name", str(user_id))
+            
+            # Hyperlink user
+            if uname:
+                name_part = f"[{display}](https://t.me/{uname})"
+            else:
+                name_part = f"[{display}](tg://user?id={user_id})"
+                
             medal   = medals[i] if i < 3 else f"{i+1}."
-            lines.append(f"  {medal} {display} — {u['total']}")
+            lines.append(f"  {medal} {name_part} — {u['total']}")
 
     await message.answer("\n".join(lines), parse_mode="Markdown")
 
@@ -176,6 +201,16 @@ async def cmd_show(message: types.Message):
         chat_id  = r["_id"]
         total    = r["total"]
         doc      = col_chats.find_one({"chat_id": chat_id}, {"_id": 0})
+        
+        # Fallback to API if not cached
+        if not doc:
+            try:
+                chat = await bot.get_chat(chat_id)
+                save_chat_meta(chat)
+                doc = col_chats.find_one({"chat_id": chat_id}, {"_id": 0})
+            except Exception:
+                pass
+                
         medal    = medals[i] if i < 3 else f"{i + 1}."
 
         if doc:
@@ -342,6 +377,15 @@ async def api_global_data():
     for r in results:
         chat_id = r["_id"]
         doc     = col_chats.find_one({"chat_id": chat_id}, {"_id": 0})
+        
+        if not doc:
+            try:
+                chat = await bot.get_chat(chat_id)
+                save_chat_meta(chat)
+                doc = col_chats.find_one({"chat_id": chat_id}, {"_id": 0})
+            except Exception:
+                pass
+                
         entry   = {"chat_id": chat_id, "total": r["total"], "title": str(chat_id), "url": None}
         if doc:
             entry["title"]    = doc.get("title", str(chat_id))
@@ -373,11 +417,19 @@ async def api_group_data(chat_id: int):
     ]))
 
     doc   = col_chats.find_one({"chat_id": chat_id}, {"_id": 0}) if col_chats is not None else None
+    if not doc and col_chats is not None:
+        try:
+            chat = await bot.get_chat(chat_id)
+            save_chat_meta(chat)
+            doc = col_chats.find_one({"chat_id": chat_id}, {"_id": 0})
+        except Exception:
+            pass
+            
     title = doc.get("title", str(chat_id)) if doc else str(chat_id)
 
     users = []
     for u in user_results:
-        info = resolve_user(u["_id"])
+        info = await resolve_user(u["_id"], bot)
         users.append({
             "user_id":      u["_id"],
             "display_name": info.get("display_name", str(u["_id"])),
@@ -638,11 +690,12 @@ async def serve_ui():
         html += '<p class="section-title">Top Reactors</p>';
         data.users.forEach((u,i) => {
           const display = u.username ? '@'+u.username : u.display_name;
+          const userUrl = u.username ? 'https://t.me/'+u.username : 'tg://user?id='+u.user_id;
           const av      = initials(u.display_name || String(u.user_id));
           html += '<div class="user-row">'+
             '<div class="rank-badge '+rankClass(i)+'">'+(medals[i]||rankLabel(i))+'</div>'+
             '<div class="user-avatar">'+av+'</div>'+
-            '<div class="user-name">'+esc(display)+'</div>'+
+            '<div class="user-name"><a href="'+userUrl+'" style="color:inherit; text-decoration:none;">'+esc(display)+'</a></div>'+
             '<div class="user-count">'+u.total.toLocaleString()+' rxn</div>'+
           '</div>';
         });
