@@ -5,6 +5,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.types import Update
 from aiogram.filters import Command
 from pymongo import MongoClient
+import html
 
 # ── Environment ─────────────────────────────────────────────────────────────
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
@@ -102,12 +103,12 @@ async def resolve_user(uid, bot_instance=None) -> dict:
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     await message.answer(
-        "👋 Hello! I am a **Reaction Tracker Bot**.\n\n"
-        "📌 *In a group:* Use `/stats` to see that group's emoji leaderboard + top reactors.\n"
-        "📌 *In PM:* Use `/show` to see the Global Leaderboard of all groups.\n"
-        "📌 *Private group admin:* Use `/setinvite https://t.me/+yourlink` to add your invite link.\n\n"
-        "Make sure I am an **Admin** in your groups so I can see reactions!",
-        parse_mode="Markdown"
+        "👋 Hello! I am a <b>Reaction Tracker Bot</b>.\n\n"
+        "📌 <i>In a group:</i> Use /stats to see that group's emoji leaderboard + top reactors.\n"
+        "📌 <i>In PM:</i> Use /show to see the Global Leaderboard of all groups.\n"
+        "📌 <i>Private group admin:</i> Use <code>/setinvite https://t.me/+yourlink</code> to add your invite link.\n\n"
+        "Make sure I am an <b>Admin</b> in your groups so I can see reactions!",
+        parse_mode="HTML"
     )
 
 
@@ -119,8 +120,8 @@ async def cmd_stats(message: types.Message):
 
     if message.chat.type == "private":
         await message.answer(
-            "ℹ️ `/stats` shows a specific group's stats.\nUse `/show` here to see the Global Leaderboard!",
-            parse_mode="Markdown"
+            "ℹ️ /stats shows a specific group's stats.\nUse /show here to see the Global Leaderboard!",
+            parse_mode="HTML"
         )
         return
 
@@ -132,48 +133,49 @@ async def cmd_stats(message: types.Message):
     emoji_results = list(col_reactions.aggregate([
         {"$match": {"chat_id": chat_id, "user_id": "GLOBAL", "count": {"$gt": 0}}},
         {"$sort": {"count": -1}},
-        {"$limit": 10}
+        {"$limit": 30}
     ]))
 
     user_results = list(col_reactions.aggregate([
         {"$match": {"chat_id": chat_id, "user_id": {"$ne": "GLOBAL"}, "count": {"$gt": 0}}},
         {"$group": {"_id": "$user_id", "total": {"$sum": "$count"}}},
         {"$sort": {"total": -1}},
-        {"$limit": 10}
+        {"$limit": 50}
     ]))
 
     if not emoji_results and not user_results:
         await message.answer("No reactions recorded yet in this group. React to some messages first!")
         return
 
-    lines = [f"📊 **{chat_title} — Reaction Stats**\n"]
+    lines = [f"📊 <b>{html.escape(chat_title)} — Reaction Stats</b>\n", "<blockquote expandable>"]
 
     if emoji_results:
         total = sum(r["count"] for r in emoji_results)
-        lines.append("🎭 **Emoji Leaderboard:**")
+        lines.append("🎭 <b>Emoji Leaderboard:</b>")
         for r in emoji_results:
             lines.append(f"  {r['reaction']}  {r['count']}")
-        lines.append(f"  ┄ Total: **{total}**\n")
+        lines.append(f"  ┄ Total: <b>{total}</b>\n")
 
     if user_results:
         medals = ["🥇", "🥈", "🥉"]
-        lines.append("🏆 **Top Reactors in this Group:**")
+        lines.append("🏆 <b>Top Reactors in this Group:</b>")
         for i, u in enumerate(user_results):
             user_id = u["_id"]
             info    = await resolve_user(user_id, bot)
             uname   = info.get("username")
-            display = info.get("display_name", str(user_id))
+            display = html.escape(info.get("display_name", str(user_id)))
             
             # Hyperlink user
             if uname:
-                name_part = f"[{display}](https://t.me/{uname})"
+                name_part = f'<a href="https://t.me/{uname}">{display}</a>'
             else:
-                name_part = f"[{display}](tg://user?id={user_id})"
+                name_part = f'<a href="tg://user?id={user_id}">{display}</a>'
                 
             medal   = medals[i] if i < 3 else f"{i+1}."
             lines.append(f"  {medal} {name_part} — {u['total']}")
 
-    await message.answer("\n".join(lines), parse_mode="Markdown")
+    lines.append("</blockquote>")
+    await message.answer("\n".join(lines), parse_mode="HTML")
 
 
 @dp.message(Command("show"))
@@ -187,7 +189,7 @@ async def cmd_show(message: types.Message):
         {"$match": {"user_id": "GLOBAL", "count": {"$gt": 0}}},
         {"$group": {"_id": "$chat_id", "total": {"$sum": "$count"}}},
         {"$sort": {"total": -1}},
-        {"$limit": 20}
+        {"$limit": 50}
     ]))
 
     if not results:
@@ -195,7 +197,7 @@ async def cmd_show(message: types.Message):
         return
 
     medals = ["🥇", "🥈", "🥉"]
-    lines  = ["🌍 **Global Group Leaderboard**\n"]
+    lines  = ["🌍 <b>Global Group Leaderboard</b>\n", "<blockquote expandable>"]
 
     for i, r in enumerate(results):
         chat_id  = r["_id"]
@@ -214,21 +216,22 @@ async def cmd_show(message: types.Message):
         medal    = medals[i] if i < 3 else f"{i + 1}."
 
         if doc:
-            title    = doc.get("title", str(chat_id))
+            title    = html.escape(doc.get("title", str(chat_id)))
             username = doc.get("username")
             invite   = doc.get("invite_link")
             if username:
-                name_part = f"[{title}](https://t.me/{username})"
+                name_part = f'<a href="https://t.me/{username}">{title}</a>'
             elif invite:
-                name_part = f"[{title}]({invite})"
+                name_part = f'<a href="{invite}">{title}</a>'
             else:
                 name_part = title
         else:
             name_part = str(chat_id)
 
         lines.append(f"{medal} {name_part} — {total} reactions")
-
-    await message.answer("\n".join(lines), parse_mode="Markdown")
+    
+    lines.append("</blockquote>")
+    await message.answer("\n".join(lines), parse_mode="HTML")
 
 
 @dp.message(Command("setinvite"))
@@ -246,8 +249,8 @@ async def cmd_setinvite(message: types.Message):
     parts = (message.text or "").split(maxsplit=1)
     if len(parts) < 2 or not parts[1].strip().startswith("https://t.me/"):
         await message.answer(
-            "Usage: `/setinvite https://t.me/+yourlink`\n\nThis link will appear next to your group in the Global Leaderboard.",
-            parse_mode="Markdown"
+            "Usage: <code>/setinvite https://t.me/+yourlink</code>\n\nThis link will appear next to your group in the Global Leaderboard.",
+            parse_mode="HTML"
         )
         return
 
