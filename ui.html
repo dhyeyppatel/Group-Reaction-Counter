@@ -1,982 +1,245 @@
 <!DOCTYPE html>
-
-<html class="dark" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>%%SITE_NAME%% | Real-Time Telegram Reaction Tracker &amp; Sentiment Analytics Bot</title>
-<meta content="Track live Telegram emoji reactions, sentiment spikes, and viral channel velocity across 12,000+ communities with zero latency. Add @%%BOT_USERNAME%% now." name="description"/>
-<!-- Material Symbols -->
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<!-- Fonts -->
-<link href="https://fonts.googleapis.com">
-<meta name="keywords" content="%%KEYWORDS%%"> rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@300;400;500;600;700&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<!-- Tailwind CSS with custom theme -->
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script id="tailwind-config">
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          "colors": {
-            "surface-tint": "#d0bcff",
-            "surface-container-highest": "#313443",
-            "on-secondary-container": "#b0b2ff",
-            "on-tertiary": "#490080",
-            "on-primary-fixed-variant": "#5516be",
-            "primary-container": "#a078ff",
-            "inverse-on-surface": "#2d303f",
-            "error": "#ffb4ab",
-            "on-background": "#e0e1f5",
-            "error-container": "#93000a",
-            "secondary-fixed": "#e1e0ff",
-            "on-tertiary-fixed-variant": "#6900b3",
-            "surface-bright": "#363848",
-            "secondary-fixed-dim": "#c0c1ff",
-            "surface-container-lowest": "#0a0d1b",
-            "on-surface-variant": "#cbc3d7",
-            "surface-dim": "#101321",
-            "primary": "#d0bcff",
-            "on-primary-fixed": "#23005c",
-            "inverse-surface": "#e0e1f5",
-            "secondary-container": "#3131c0",
-            "on-secondary-fixed-variant": "#2f2ebe",
-            "on-primary": "#3c0091",
-            "surface-container-low": "#181b29",
-            "primary-fixed": "#e9ddff",
-            "outline": "#958ea0",
-            "primary-fixed-dim": "#d0bcff",
-            "secondary": "#c0c1ff",
-            "surface": "#101321",
-            "on-surface": "#e0e1f5",
-            "on-secondary-fixed": "#07006c",
-            "outline-variant": "#494454",
-            "on-error-container": "#ffdad6",
-            "on-tertiary-container": "#400071",
-            "tertiary-container": "#b76dff",
-            "surface-variant": "#313443",
-            "tertiary-fixed-dim": "#ddb7ff",
-            "on-secondary": "#1000a9",
-            "on-error": "#690005",
-            "tertiary-fixed": "#f0dbff",
-            "surface-container": "#1c1f2d",
-            "inverse-primary": "#6d3bd7",
-            "tertiary": "#ddb7ff",
-            "on-tertiary-fixed": "#2c0051",
-            "background": "#101321",
-            "surface-container-high": "#262938"
-          },
-          "borderRadius": {
-            "DEFAULT": "0.25rem",
-            "lg": "0.5rem",
-            "xl": "0.75rem",
-            "full": "9999px"
-          },
-          "spacing": {
-            "space-lg": "1.5rem",
-            "gutter": "1.25rem",
-            "space-xs": "0.25rem",
-            "margin": "2rem",
-            "space-xl": "2.5rem",
-            "margin-mobile": "1rem",
-            "space-sm": "0.5rem",
-            "space-md": "1rem",
-            "gutter-mobile": "0.75rem"
-          },
-          "fontFamily": {
-            "body-lg": ["Plus Jakarta Sans"],
-            "display-xl": ["Space Grotesk"],
-            "label-sm": ["JetBrains Mono"],
-            "metric-sub": ["JetBrains Mono"],
-            "body-sm": ["Plus Jakarta Sans"],
-            "headline-lg-mobile": ["Space Grotesk"],
-            "body-md": ["Plus Jakarta Sans"],
-            "headline-lg": ["Space Grotesk"],
-            "metric-display": ["JetBrains Mono"],
-            "headline-sm": ["Space Grotesk"],
-            "label-md": ["JetBrains Mono"],
-            "headline-md": ["Space Grotesk"],
-            "display-xl-mobile": ["Space Grotesk"]
-          },
-          "fontSize": {
-            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
-            "display-xl": ["56px", { "lineHeight": "64px", "letterSpacing": "-0.03em", "fontWeight": "700" }],
-            "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.08em", "fontWeight": "600" }],
-            "metric-sub": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
-            "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }],
-            "headline-lg-mobile": ["26px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
-            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
-            "headline-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
-            "metric-display": ["32px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
-            "headline-sm": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
-            "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
-            "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
-            "display-xl-mobile": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+<html lang="en" class="antialiased text-slate-800 bg-slate-50 selection:bg-blue-600 selection:text-white">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>%%SITE_NAME%% - Global Leaderboard</title>
+    <meta name="description" content="%%DESCRIPTION%%"/>
+    <meta name="keywords" content="%%KEYWORDS%%"/>
+    
+    <!-- Fonts: Fira Sans for UI, Fira Code for Data -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Fira Sans"', 'sans-serif'],
+              mono: ['"Fira Code"', 'monospace'],
+            },
+            colors: {
+              primary: '#1E40AF', // Deep blue
+              secondary: '#3B82F6',
+              accent: '#D97706', // Amber
+              background: '#F8FAFC',
+              card: '#FFFFFF',
+              border: '#DBEAFE',
+              muted: '#E9EEF6',
+            }
           }
         }
       }
-    }
-  </script>
-<style>
-    /* Obsidian Telemetry Grid Texture */
-    .bg-grid-telemetry {
-      background-size: 32px 32px;
-      background-image: 
-        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    }
-    .glow-violet {
-      box-shadow: 0 0 35px -5px rgba(160, 120, 255, 0.28);
-    }
-    .glow-cyan {
-      box-shadow: 0 0 20px -3px rgba(192, 193, 255, 0.35);
-    }
-    .glass-panel {
-      background: rgba(17, 20, 34, 0.78);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      border-top: 1px solid rgba(255, 255, 255, 0.09);
-    }
-    .apex-gold {
-      background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(180, 83, 9, 0.04));
-      border: 1px solid rgba(245, 158, 11, 0.4);
-    }
-    .apex-silver {
-      background: linear-gradient(135deg, rgba(148, 163, 184, 0.12), rgba(71, 85, 105, 0.05));
-      border: 1px solid rgba(148, 163, 184, 0.35);
-    }
-    .apex-bronze {
-      background: linear-gradient(135deg, rgba(217, 119, 6, 0.12), rgba(120, 53, 15, 0.05));
-      border: 1px solid rgba(217, 119, 6, 0.35);
-    }
-    /* Pulse Radar */
-    @keyframes pulse-radar {
-      0% { transform: scale(0.95); opacity: 0.9; }
-      50% { transform: scale(1.35); opacity: 0.2; }
-      100% { transform: scale(0.95); opacity: 0.9; }
-    }
-    .radar-beacon {
-      animation: pulse-radar 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
-    .material-symbols-outlined {
-      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-      display: inline-block;
-      vertical-align: middle;
-      line-height: 1;
-    }
-  </style>
+    </script>
+    
+    <!-- GSAP for animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <!-- Lucide for Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=%%ADSENSE_CLIENT_ID%%" crossorigin="anonymous"></script>
 
-<!-- GSAP & Lucide -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
-
-
-<!-- Google AdSense -->
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=%%ADSENSE_CLIENT_ID%%" crossorigin="anonymous"></script>
-
+    <style>
+      /* Clean subtle shadow for cards */
+      .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); }
+      .data-row { transition: all 0.2s ease-in-out; }
+      .data-row:hover { background-color: #F1F5F9; transform: translateX(4px); }
+    </style>
 </head>
-<body class="bg-background text-on-background font-body-md antialiased min-h-screen selection:bg-primary selection:text-on-primary relative overflow-x-hidden">
-<!-- Ambient Obsidian Light Bleeds -->
-<div class="fixed top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[480px] bg-gradient-to-b from-primary-container/15 via-secondary-container/10 to-transparent blur-[140px] pointer-events-none -z-10"></div>
-<div class="fixed top-[45%] right-0 w-[550px] h-[550px] bg-tertiary-container/10 blur-[160px] pointer-events-none -z-10"></div>
-<div class="fixed bottom-0 left-[-100px] w-[600px] h-[600px] bg-secondary-container/15 blur-[170px] pointer-events-none -z-10"></div>
-<!-- Shared Top Navigation (From Source of Truth JSON) -->
-<header class="bg-surface-container-lowest/80 backdrop-blur-xl dark:bg-surface-container-lowest/80 docked full-width top-0 sticky z-50 border-b border-outline-variant/30 shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
-<div class="flex justify-between items-center w-full px-space-lg py-space-sm max-w-full">
-<!-- Brand & Search cluster -->
-<div class="flex items-center gap-space-md">
-<!-- Logo -->
-<a class="flex items-center gap-2 group" href="#">
-<div class="w-9 h-9 rounded-lg bg-surface-container-high border border-outline-variant/40 flex items-center justify-center glow-violet transition-transform group-hover:scale-105">
-<span class="material-symbols-outlined text-primary text-xl" data-icon="insights" style="font-variation-settings: 'FILL' 1;">insights</span>
-</div>
-<div>
-<span class="text-headline-sm font-headline-sm tracking-tight text-on-surface dark:text-on-surface font-bold flex items-center gap-1.5">
-              TelePulse <span class="text-primary font-normal text-body-sm px-1.5 py-0.5 rounded bg-surface-container-high border border-outline-variant/50">BOT</span>
-</span>
-</div>
-</a>
-<!-- Live Latency Webhook Indicator -->
-<div class="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container border border-outline-variant/30 text-label-sm font-label-sm text-on-surface-variant">
-<span class="relative flex h-2 w-2">
-<span class="radar-beacon absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-</span>
-<span class="text-on-surface">Webhook Sync</span>
-<span class="text-primary font-metric-sub text-xs">24ms</span>
-</div>
-<!-- Command Search Bar -->
-<div class="relative hidden md:block w-64 lg:w-80 ml-2">
-<span class="material-symbols-outlined absolute left-3 top-2.5 text-outline text-lg pointer-events-none" data-icon="search">search</span>
-<input class="w-full bg-[#111422] border border-outline-variant/30 rounded-lg pl-9 pr-8 py-1.5 text-body-sm font-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 transition-all" id="global-channel-search" placeholder="Search channels, @handles, tags..." type="text"/>
-<span class="absolute right-2.5 top-2 text-[10px] font-label-sm bg-surface-container-high text-outline-variant px-1.5 py-0.5 rounded border border-outline-variant/40">⌘K</span>
-</div>
-</div>
-<!-- Center Desktop Nav Links (Shared Component Anchor) -->
-<nav class="hidden xl:flex items-center gap-6">
-<a class="text-primary dark:text-primary border-b-2 border-primary font-label-md text-label-md pb-1 flex items-center gap-1.5" href="#leaderboard-section">
-<span class="material-symbols-outlined text-sm" data-icon="leaderboard">leaderboard</span>
-          Leaderboard
-        </a>
-<a class="text-on-surface-variant dark:text-on-surface-variant font-label-md text-label-md hover:text-on-surface flex items-center gap-1.5 transition-colors" href="#features">
-<span class="material-symbols-outlined text-sm" data-icon="speed">speed</span>
-          Telemetry
-        </a>
-<a class="text-on-surface-variant dark:text-on-surface-variant font-label-md text-label-md hover:text-on-surface flex items-center gap-1.5 transition-colors" href="#how-it-works">
-<span class="material-symbols-outlined text-sm" data-icon="forum">forum</span>
-          Intelligence
-        </a>
-<a class="text-on-surface-variant dark:text-on-surface-variant font-label-md text-label-md hover:text-on-surface flex items-center gap-1.5 transition-colors" href="#faq">
-<span class="material-symbols-outlined text-sm" data-icon="notifications">notifications</span>
-          Alerts
-        </a>
-</nav>
-<!-- Trailing Action Buttons & Profile (JSON Anchor) -->
-<div class="flex items-center gap-3">
-<!-- Secondary Action: Export Data -->
-<button class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-high/60 border border-outline-variant/40 text-on-surface font-label-md text-label-md hover:bg-surface-container-high hover:border-primary/40 active:scale-[0.98] transition-all" id="exportDataBtn">
-<span class="material-symbols-outlined text-sm" data-icon="tune">tune</span>
-          Export Data
-        </button>
-<!-- Primary Action: Connect Telegram -->
-<a class="relative group inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-primary-container to-secondary-container text-white font-label-md text-label-md font-semibold shadow-lg hover:shadow-primary/30 active:scale-[0.98] transition-all overflow-hidden" href="https://t.me/ReactionTrackerBot?start=landing" rel="noopener noreferrer" target="_blank">
-<span class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-200"></span>
-<span class="material-symbols-outlined text-base" data-icon="sensors">sensors</span>
-<span class="relative">Connect Telegram</span>
-</a>
-<!-- System Icons -->
-<button aria-label="Notifications" class="p-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-high/50 transition-colors">
-<span class="material-symbols-outlined text-lg" data-icon="notifications">notifications</span>
-</button>
-<!-- User Profile Avatar -->
-<div class="w-8 h-8 rounded-full border border-outline-variant/50 overflow-hidden bg-surface-container-high flex items-center justify-center">
-<img class="w-full h-full object-cover" data-alt="Executive User Profile Avatar rendered in a futuristic dark mode telemetry cockpit with subtle neon indigo backlight highlights and sharp glass reflection detail" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvroBAYIF9q0lunZcIJrtGXrRVpbAyXYUNwjqAWzDzhTB9GlYw2YFocbQ9F_br0QzxCQOFsF5pqDitA14STfCW9DKZTNkyf4MO7RgczZNjkfdpnLcQnRGhyH-__YrzjtiMmG2EnVFFkUDt1qTEv3t3GmQsY3kn1kVvTHUJkjk3gWnXSJyfEBoHLKvHJFZeX6eF0cQuLnk5g0x1IKe1QiawSvgzjBdPGdy8q_7EAK6pEr1CDB2VzmXxF2e2UB8L2p6M5DyVIe-raGhI"/>
-</div>
-</div>
-</div>
-</header>
-<!-- High-Impact Hero Section -->
-<section class="relative pt-12 pb-16 md:pt-20 md:pb-24 overflow-hidden bg-grid-telemetry">
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-<!-- Announcement Micro-Pill -->
-<div class="flex justify-center mb-6">
-<div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-container-high/80 border border-primary/30 backdrop-blur-md shadow-inner text-label-sm font-label-sm">
-<span class="px-2 py-0.5 rounded bg-primary/20 text-primary uppercase font-bold text-[9px] tracking-wider">v2.4 Engine</span>
-<span class="text-on-surface">Sub-second Reaction Stream via MTProto Bot API 7.0</span>
-<span class="material-symbols-outlined text-xs text-primary" data-icon="speed">speed</span>
-</div>
-</div>
-<!-- Primary SEO H1 Headline -->
-<div class="text-center max-w-4xl mx-auto">
-<h1 class="text-headline-lg-mobile md:text-display-xl font-display-xl tracking-tight text-white mb-6">
-          Real-Time Telegram <span class="bg-gradient-to-r from-primary via-tertiary to-secondary bg-clip-text text-transparent">Reaction Tracker</span> &amp; Sentiment Analytics Bot
-        </h1>
-<p class="text-body-md md:text-body-lg font-body-lg text-on-surface-variant max-w-2xl mx-auto mb-8 leading-relaxed">
-          Monitor instant emoji telemetry, filter sybil raid attacks, and measure viral community velocity across <strong class="text-on-surface font-semibold">12,000+ top crypto, trading, &amp; media channels</strong> in real time.
-        </p>
-<!-- Hero CTAs -->
-<div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-<a class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-gradient-to-r from-primary-container via-[#8B5CF6] to-secondary-container text-white font-label-md text-label-md font-bold shadow-[0_0_28px_-4px_rgba(139,92,246,0.6)] hover:shadow-[0_0_36px_-2px_rgba(139,92,246,0.8)] active:scale-[0.98] transition-all" href="https://t.me/ReactionTrackerBot?start=quickadd">
-<span class="material-symbols-outlined text-lg" data-icon="forum">forum</span>
-            Add Bot to Channel (Free)
-          </a>
-<a class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-surface-container-low border border-outline-variant/40 hover:border-primary/50 text-on-surface font-label-md text-label-md active:scale-[0.98] transition-all" href="#leaderboard-section">
-<span class="material-symbols-outlined text-lg text-primary" data-icon="leaderboard">leaderboard</span>
-            View Live Leaderboard
-          </a>
-</div>
-<!-- Live Counter Ticker Bar -->
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-2xl glass-panel border border-outline-variant/30 text-left">
-<div class="p-3 border-r border-outline-variant/20 last:border-none">
-<div class="flex items-center gap-1.5 text-label-sm font-label-sm text-outline mb-1">
-<span class="material-symbols-outlined text-xs text-primary" data-icon="insights">insights</span>
-              TOTAL REACTIONS
+<body class="min-h-screen flex flex-col font-sans">
+    
+    <!-- Navbar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i data-lucide="bar-chart-2" class="w-6 h-6 text-primary"></i>
+                <h1 class="font-bold text-xl text-slate-900">%%SITE_NAME%%</h1>
             </div>
-<div class="text-headline-sm md:text-metric-display font-metric-display text-white tracking-tight" id="ticker-reactions">48,912,400</div>
-<div class="text-[11px] font-label-sm text-emerald-400 flex items-center gap-1 mt-0.5">
-<span>↑ 1,420 / min</span>
-</div>
-</div>
-<div class="p-3 border-r border-outline-variant/20 last:border-none">
-<div class="flex items-center gap-1.5 text-label-sm font-label-sm text-outline mb-1">
-<span class="material-symbols-outlined text-xs text-secondary" data-icon="forum">forum</span>
-              ACTIVE CHANNELS
-            </div>
-<div class="text-headline-sm md:text-metric-display font-metric-display text-white tracking-tight" id="ticker-channels">4,821</div>
-<div class="text-[11px] font-label-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
-<span>98.6% Verified</span>
-</div>
-</div>
-<div class="p-3 border-r border-outline-variant/20 last:border-none">
-<div class="flex items-center gap-1.5 text-label-sm font-label-sm text-outline mb-1">
-<span class="material-symbols-outlined text-xs text-amber-400" data-icon="speed">speed</span>
-              PEAK VELOCITY (24H)
-            </div>
-<div class="text-headline-sm md:text-metric-display font-metric-display text-white tracking-tight">+148.2%</div>
-<div class="text-[11px] font-label-sm text-primary flex items-center gap-1 mt-0.5">
-<span>Spike at 14:00 UTC</span>
-</div>
-</div>
-<div class="p-3">
-<div class="flex items-center gap-1.5 text-label-sm font-label-sm text-outline mb-1">
-<span class="material-symbols-outlined text-xs text-tertiary" data-icon="menu_book">menu_book</span>
-              KEY EMOJI SIGNALS
-            </div>
-<div class="flex items-center gap-2 text-xl pt-1">
-<span title="Bullish Surge">🔥</span>
-<span title="Moonshot Momentum">🚀</span>
-<span title="Breaking Speed">⚡</span>
-<span title="Diamond Hands">💎</span>
-<span title="High Affinity">❤️</span>
-</div>
-<div class="text-[11px] font-label-sm text-on-surface-variant mt-1.5">
-              Weighted index
-            </div>
-</div>
-</div>
-</div>
-</div>
-</section>
-<!-- Dedicated AdSense Banner Slot #1 (Leaderboard Top 728x90 / 970x90) -->
-<section class="max-w-6xl mx-auto px-4 sm:px-6 my-6">
-<div class="relative w-full rounded-xl bg-surface-container-lowest border border-outline-variant/30 p-2 sm:p-3 overflow-hidden text-center">
-<div class="flex justify-between items-center px-2 pb-1.5">
-<span class="text-[10px] font-label-sm uppercase tracking-widest text-outline">Sponsored Intelligence Partner</span>
-<span class="text-[10px] font-label-sm text-outline-variant">AdSense Slot ID: #AD-728-TOP</span>
-</div>
-<!-- Ad Canvas Container -->
-<div class="w-full min-h-[90px] rounded-lg bg-surface-container/70 border border-dashed border-outline-variant/40 flex flex-col items-center justify-center p-3 relative group hover:border-primary/50 transition-all">
-<div class="flex flex-col sm:flex-row items-center justify-between w-full max-w-4xl px-4 gap-3">
-<div class="flex items-center gap-3 text-left">
-<div class="w-10 h-10 rounded bg-primary-container/20 border border-primary/40 flex items-center justify-center text-primary">
-<span class="material-symbols-outlined" data-icon="tune">tune</span>
-</div>
-<div>
-<p class="text-body-sm font-body-sm font-bold text-white">ExoData High-Frequency Telegram Trading Signals</p>
-<p class="text-xs text-on-surface-variant">Automate buy/sell triggers using Reaction Tracker Bot sentiment velocity.</p>
-</div>
-</div>
-<a class="px-4 py-1.5 rounded bg-surface-bright text-white text-xs font-label-md border border-outline-variant hover:bg-primary-container hover:text-white transition-all whitespace-nowrap" href="#">
-            Claim Free API Pass →
-          </a>
-</div>
-</div>
-</div>
-</section>
-<!-- Interactive Global Leaderboard Section -->
-<section class="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" id="leaderboard-section">
-<!-- Section Header & Filter Controls -->
-<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
-<div>
-<div class="inline-flex items-center gap-2 text-primary font-label-sm text-xs mb-1">
-<span class="material-symbols-outlined text-sm" data-icon="leaderboard">leaderboard</span>
-          LIVE RADAR RANKINGS
+            <nav class="flex items-center gap-4">
+                <a href="http://t.me/%%BOT_USERNAME%%?startgroup=start" target="_blank" class="inline-flex items-center gap-2 bg-primary hover:bg-blue-800 text-white px-4 py-2 rounded-md font-medium transition-colors text-sm">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Add to Telegram
+                </a>
+            </nav>
         </div>
-<h2 class="text-headline-md md:text-headline-lg font-headline-lg text-white">
-          Telegram Reaction Velocity Index
-        </h2>
-<p class="text-body-sm text-on-surface-variant">Rankings calculate real-time net emoji volume, unique voter weights, and spam-filtered engagement.</p>
-</div>
-<!-- Segmented Tab Controls -->
-<div class="inline-flex p-1 rounded-xl bg-surface-container-low border border-outline-variant/40" id="leaderboard-tabs">
-<button class="active-tab px-4 py-2 rounded-lg text-xs font-label-md font-semibold bg-surface-container-high text-primary border border-primary/40 shadow-sm transition-all flex items-center gap-1.5" data-category="channels">
-<span>🔥</span> Top Channels
-        </button>
-<button class="px-4 py-2 rounded-lg text-xs font-label-md font-medium text-on-surface-variant hover:text-white transition-all flex items-center gap-1.5" data-category="groups">
-<span>👥</span> Top Groups
-        </button>
-<button class="px-4 py-2 rounded-lg text-xs font-label-md font-medium text-on-surface-variant hover:text-white transition-all flex items-center gap-1.5" data-category="velocity">
-<span>⚡</span> Viral Velocity (24h)
-        </button>
-</div>
-</div>
-<!-- Apex Podium: Top 3 Channel Showcase -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10" id="podium-grid">
-<!-- Rank #2: Refined Silver -->
-<div class="apex-silver order-2 md:order-1 rounded-2xl p-5 relative overflow-hidden backdrop-blur-xl flex flex-col justify-between">
-<div class="absolute -right-6 -bottom-6 text-slate-700/10 font-metric-display text-9xl select-none pointer-events-none">2</div>
-<div>
-<div class="flex justify-between items-start mb-4">
-<span class="px-2.5 py-1 rounded-full text-xs font-label-sm font-bold bg-slate-400/20 text-slate-200 border border-slate-300/30 flex items-center gap-1">
-<span>🥈</span> RANK #2
-            </span>
-<span class="px-2 py-0.5 rounded text-[11px] font-label-sm bg-surface-container-lowest text-emerald-400 border border-emerald-500/30">
-              +42.1% 24h
-            </span>
-</div>
-<div class="flex items-center gap-3 mb-3">
-<div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center font-bold text-lg text-white border border-outline-variant/50">
-              ⚡
-            </div>
-<div>
-<h3 class="text-headline-sm font-headline-sm text-white flex items-center gap-1">
-                Alpha Signals Hub <span class="material-symbols-outlined text-primary text-base" data-icon="verified" style="font-variation-settings: 'FILL' 1;">verified</span>
-</h3>
-<p class="text-xs text-outline font-label-sm">@AlphaSignalsTg • 342,000 subs</p>
-</div>
-</div>
-<p class="text-body-sm text-on-surface-variant mb-4">
-            Real-time onchain DEX alerts, whale movement radar, and liquidity alerts.
-          </p>
-</div>
-<div class="border-t border-outline-variant/30 pt-3">
-<div class="flex justify-between text-xs font-label-sm mb-1">
-<span class="text-outline">24h Net Reactions</span>
-<span class="text-white font-metric-sub font-semibold">1,894,320</span>
-</div>
-<!-- Reaction Heat Pill Breakdown -->
-<div class="flex gap-2 text-xs">
-<span class="px-2 py-1 rounded bg-surface-container text-white">🔥 45%</span>
-<span class="px-2 py-1 rounded bg-surface-container text-white">🚀 35%</span>
-<span class="px-2 py-1 rounded bg-surface-container text-white">⚡ 20%</span>
-</div>
-</div>
-</div>
-<!-- Rank #1: Apex Gold (Center Stage) -->
-<div class="apex-gold order-1 md:order-2 rounded-2xl p-6 relative overflow-hidden backdrop-blur-2xl flex flex-col justify-between shadow-[0_0_40px_-10px_rgba(245,158,11,0.25)] border-amber-500/50 scale-[1.02]">
-<div class="absolute -right-6 -bottom-6 text-amber-500/10 font-metric-display text-9xl select-none pointer-events-none">1</div>
-<div>
-<div class="flex justify-between items-start mb-4">
-<span class="px-3 py-1 rounded-full text-xs font-label-sm font-bold bg-amber-400/25 text-amber-300 border border-amber-400/50 flex items-center gap-1.5 shadow-sm">
-<span>👑</span> APEX LEADER #1
-            </span>
-<span class="px-2.5 py-0.5 rounded text-[11px] font-label-sm bg-surface-container-lowest text-amber-300 border border-amber-500/40">
-              +78.6% Velocity
-            </span>
-</div>
-<div class="flex items-center gap-3.5 mb-3">
-<div class="w-14 h-14 rounded-xl bg-gradient-to-tr from-amber-600/40 to-yellow-300/30 flex items-center justify-center font-bold text-2xl text-amber-200 border border-amber-400/60 shadow-inner">
-              🚀
-            </div>
-<div>
-<h3 class="text-headline-md font-headline-md text-white flex items-center gap-1.5">
-                Telegram Pulse News <span class="material-symbols-outlined text-amber-400 text-lg" data-icon="verified" style="font-variation-settings: 'FILL' 1;">verified</span>
-</h3>
-<p class="text-xs text-amber-200/70 font-label-sm">@PulseNewsGlobal • 1,280,000 subs</p>
-</div>
-</div>
-<p class="text-body-sm text-on-surface-variant mb-4">
-            Primary broadcast channel for major breaking updates, technical protocol announcements, and real-time community polls.
-          </p>
-</div>
-<div class="border-t border-amber-500/30 pt-3">
-<div class="flex justify-between text-xs font-label-sm mb-1.5">
-<span class="text-amber-200/80">24h Net Reactions</span>
-<span class="text-amber-300 font-metric-display text-xl font-bold">4,120,890</span>
-</div>
-<div class="flex gap-2 text-xs">
-<span class="px-2 py-1 rounded bg-amber-950/40 text-amber-200 border border-amber-500/30">🔥 52%</span>
-<span class="px-2 py-1 rounded bg-amber-950/40 text-amber-200 border border-amber-500/30">🚀 28%</span>
-<span class="px-2 py-1 rounded bg-amber-950/40 text-amber-200 border border-amber-500/30">💎 14%</span>
-<span class="px-2 py-1 rounded bg-amber-950/40 text-amber-200 border border-amber-500/30">❤️ 6%</span>
-</div>
-</div>
-</div>
-<!-- Rank #3: Raw Bronze -->
-<div class="apex-bronze order-3 md:order-3 rounded-2xl p-5 relative overflow-hidden backdrop-blur-xl flex flex-col justify-between">
-<div class="absolute -right-6 -bottom-6 text-amber-900/15 font-metric-display text-9xl select-none pointer-events-none">3</div>
-<div>
-<div class="flex justify-between items-start mb-4">
-<span class="px-2.5 py-1 rounded-full text-xs font-label-sm font-bold bg-amber-700/20 text-amber-300 border border-amber-600/30 flex items-center gap-1">
-<span>🥉</span> RANK #3
-            </span>
-<span class="px-2 py-0.5 rounded text-[11px] font-label-sm bg-surface-container-lowest text-emerald-400 border border-emerald-500/30">
-              +31.4% 24h
-            </span>
-</div>
-<div class="flex items-center gap-3 mb-3">
-<div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center font-bold text-lg text-white border border-outline-variant/50">
-              💎
-            </div>
-<div>
-<h3 class="text-headline-sm font-headline-sm text-white flex items-center gap-1">
-                DeFi Ecosystems <span class="material-symbols-outlined text-primary text-base" data-icon="verified" style="font-variation-settings: 'FILL' 1;">verified</span>
-</h3>
-<p class="text-xs text-outline font-label-sm">@DefiEcosystems • 580,200 subs</p>
-</div>
-</div>
-<p class="text-body-sm text-on-surface-variant mb-4">
-            Yield telemetry, liquidity pool stats, governance voting alerts, and audited contract logs.
-          </p>
-</div>
-<div class="border-t border-outline-variant/30 pt-3">
-<div class="flex justify-between text-xs font-label-sm mb-1">
-<span class="text-outline">24h Net Reactions</span>
-<span class="text-white font-metric-sub font-semibold">1,240,110</span>
-</div>
-<div class="flex gap-2 text-xs">
-<span class="px-2 py-1 rounded bg-surface-container text-white">💎 48%</span>
-<span class="px-2 py-1 rounded bg-surface-container text-white">🔥 32%</span>
-<span class="px-2 py-1 rounded bg-surface-container text-white">⚡ 20%</span>
-</div>
-</div>
-</div>
-</div>
-<!-- Detailed Sortable High-Density Leaderboard Table -->
-<div class="rounded-2xl glass-panel border border-outline-variant/30 overflow-hidden shadow-2xl">
-<div class="p-4 border-b border-outline-variant/30 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-<div class="flex items-center gap-2">
-<span class="font-headline-sm text-white">Global Telemetry Stream</span>
-<span class="px-2 py-0.5 rounded text-[11px] font-label-sm bg-primary/20 text-primary border border-primary/30">Auto-Refreshes: 15s</span>
-</div>
-<div class="flex items-center gap-2 text-xs font-label-sm">
-<span class="text-outline">Sort By:</span>
-<select class="bg-surface-container-high border border-outline-variant/40 rounded-lg px-2.5 py-1 text-white text-xs focus:ring-1 focus:ring-primary focus:outline-none" id="sort-select">
-<option value="reactions">Reactions (High to Low)</option>
-<option value="velocity">Velocity Speed (%)</option>
-<option value="subs">Subscriber Base</option>
-</select>
-</div>
-</div>
-<!-- Responsive Table Wrap -->
-<div class="overflow-x-auto">
-<table class="w-full text-left text-sm" id="leaderboard-table">
-<thead class="bg-surface-container-lowest/90 text-outline text-[11px] font-label-sm uppercase tracking-wider border-b border-outline-variant/30">
-<tr>
-<th class="py-3.5 px-4 w-16 text-center" scope="col">Rank</th>
-<th class="py-3.5 px-4" scope="col">Channel / Community</th>
-<th class="py-3.5 px-3" scope="col">Type</th>
-<th class="py-3.5 px-4" scope="col">Subscribers</th>
-<th class="py-3.5 px-4" scope="col">24h Net Reactions</th>
-<th class="py-3.5 px-4" scope="col">Velocity Spark</th>
-<th class="py-3.5 px-4" scope="col">Primary Emoji Breakdown</th>
-<th class="py-3.5 px-4 text-right" scope="col">Action</th>
-</tr>
-</thead>
-<tbody class="divide-y divide-outline-variant/20 text-body-sm font-body-sm" id="leaderboard-body">
-<!-- Dynamic entries loaded via JavaScript config -->
-</tbody>
-</table>
-</div>
-<!-- Table Footer Status Strip -->
-<div class="p-3 bg-surface-container-lowest/80 border-t border-outline-variant/30 flex flex-col sm:flex-row items-center justify-between text-xs font-label-sm text-outline gap-2">
-<div class="flex items-center gap-2">
-<span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
-<span>Showing Top 10 of 12,410 Monitored Telegram Communities</span>
-</div>
-<div class="flex items-center gap-4">
-<a class="hover:text-primary transition-colors" href="#">Download JSON Data</a>
-<a class="hover:text-primary transition-colors" href="#">Apply For Verified Badge</a>
-</div>
-</div>
-</div>
-</section>
-<!-- Core Features Bento Grid -->
-<section class="py-16 bg-surface-container-lowest/50 border-t border-b border-outline-variant/20" id="features">
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-<div class="text-center max-w-3xl mx-auto mb-14">
-<span class="text-primary font-label-sm text-xs uppercase tracking-widest">Enterprise Telemetry Engine</span>
-<h2 class="text-headline-md md:text-headline-lg font-headline-lg text-white mt-1 mb-3">
-          Built for Admins, Whales, and Protocol Observers
-        </h2>
-<p class="text-body-md text-on-surface-variant">
-          Ordinary bots count clicks. TelePulse computes sentiment vector weights, user credibility scores, and instantaneous virality thresholds.
-        </p>
-</div>
-<!-- Bento Grid Layout -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-<!-- Feature 1: Velocity Tracker (Wide Card) -->
-<div class="md:col-span-2 rounded-2xl glass-panel p-6 border border-outline-variant/30 hover:border-primary/40 transition-all flex flex-col justify-between">
-<div>
-<div class="w-10 h-10 rounded-lg bg-primary-container/20 border border-primary/30 flex items-center justify-center text-primary mb-4">
-<span class="material-symbols-outlined" data-icon="speed">speed</span>
-</div>
-<h3 class="text-headline-sm font-headline-sm text-white mb-2">Instant Emoji Velocity Tracker</h3>
-<p class="text-body-sm text-on-surface-variant mb-6">
-              Track reaction acceleration in rolling 60-second windows. Instantly detect when a post breaks community baseline velocity by 300% or more, indicating viral momentum or breaking news.
-            </p>
-</div>
-<!-- Visual representation -->
-<div class="p-4 rounded-xl bg-surface-container border border-outline-variant/30 flex items-center justify-between text-xs font-label-sm">
-<div class="flex items-center gap-3">
-<span class="text-2xl">🔥</span>
-<div>
-<div class="text-white font-bold">1,840 Reactions / min</div>
-<div class="text-outline">Baseline: 110 / min (16.7x deviation)</div>
-</div>
-</div>
-<span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
-              VIRAL SPIKE ACTIVE
-            </span>
-</div>
-</div>
-<!-- Feature 2: Anti-Raid Filter -->
-<div class="rounded-2xl glass-panel p-6 border border-outline-variant/30 hover:border-primary/40 transition-all">
-<div class="w-10 h-10 rounded-lg bg-secondary-container/30 border border-secondary/30 flex items-center justify-center text-secondary mb-4">
-<span class="material-symbols-outlined" data-icon="sensors">sensors</span>
-</div>
-<h3 class="text-headline-sm font-headline-sm text-white mb-2">Anti-Raid Sybil Filtering</h3>
-<p class="text-body-sm text-on-surface-variant mb-4">
-            Isolates automated bot reaction spam, throwaway accounts, and coordinated clown-emoji raids. Only legitimate member engagements reach the leaderboard.
-          </p>
-<div class="text-[11px] font-label-sm text-primary flex items-center gap-1.5 pt-2">
-<span class="material-symbols-outlined text-sm" data-icon="verified">verified</span>
-            99.98% Bot Detection Accuracy
-          </div>
-</div>
-<!-- Feature 3: Whale Sentiment Detection -->
-<div class="rounded-2xl glass-panel p-6 border border-outline-variant/30 hover:border-primary/40 transition-all">
-<div class="w-10 h-10 rounded-lg bg-tertiary-container/30 border border-tertiary/30 flex items-center justify-center text-tertiary mb-4">
-<span class="material-symbols-outlined" data-icon="insights">insights</span>
-</div>
-<h3 class="text-headline-sm font-headline-sm text-white mb-2">Whale Sentiment Detection</h3>
-<p class="text-body-sm text-on-surface-variant mb-4">
-            Weights reactions by account tenure and verified channel authority. When a verified crypto founder or whale reacts with 🚀 or 💎, get notified immediately.
-          </p>
-<div class="text-[11px] font-label-sm text-outline">
-            Custom Webhook Alerts • Telegram DM Push
-          </div>
-</div>
-<!-- Feature 4: Automated Recaps (Wide Card) -->
-<div class="md:col-span-2 rounded-2xl glass-panel p-6 border border-outline-variant/30 hover:border-primary/40 transition-all flex flex-col justify-between">
-<div>
-<div class="w-10 h-10 rounded-lg bg-surface-container-high border border-outline-variant/40 flex items-center justify-center text-white mb-4">
-<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
-</div>
-<h3 class="text-headline-sm font-headline-sm text-white mb-2">Automated Channel Daily Recaps &amp; Infographics</h3>
-<p class="text-body-sm text-on-surface-variant mb-4">
-              TelePulse Bot compiles an aesthetic high-resolution end-of-day infographic card directly in your channel: Top 3 Most Hyped Posts, Overall Bullish/Bearish Ratio, and Top Community Reactor MVPs.
-            </p>
-</div>
-<div class="flex flex-wrap gap-2 text-xs font-label-sm">
-<span class="px-2.5 py-1 rounded bg-surface-container text-on-surface-variant">PNG Infographics</span>
-<span class="px-2.5 py-1 rounded bg-surface-container text-on-surface-variant">CSV Ledger Export</span>
-<span class="px-2.5 py-1 rounded bg-surface-container text-on-surface-variant">Multi-Language Recaps</span>
-<span class="px-2.5 py-1 rounded bg-surface-container text-on-surface-variant">Zero Server Load</span>
-</div>
-</div>
-</div>
-</div>
-</section>
-<!-- Secondary AdSense In-Content Banner (300x250 or responsive) -->
-<section class="max-w-4xl mx-auto px-4 my-10">
-<div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/30 text-center">
-<div class="flex justify-between items-center text-[10px] font-label-sm text-outline mb-2">
-<span>SPONSORED PROMOTION</span>
-<span>AD-300-CONTENT</span>
-</div>
-<div class="py-6 px-4 rounded-lg bg-surface-container-low/70 border border-dashed border-outline-variant/40 flex flex-col sm:flex-row items-center justify-around gap-4">
-<div class="text-left">
-<span class="px-2 py-0.5 rounded text-[10px] font-label-sm bg-primary/20 text-primary">PREMIUM SPONSOR</span>
-<h4 class="text-white font-headline-sm mt-1">Host Telegram Bots with Sub-5ms Global Edge Latency</h4>
-<p class="text-xs text-on-surface-variant">Deploy containerized bots worldwide with instant auto-scaling and zero configuration.</p>
-</div>
-<a class="px-4 py-2 rounded-lg bg-primary-container text-white text-xs font-label-md font-semibold hover:bg-primary transition-all whitespace-nowrap" href="#">
-          Start Free Tier →
-        </a>
-</div>
-</div>
-</section>
-<!-- How It Works 3-Step Interactive Process -->
-<section class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" id="how-it-works">
-<div class="text-center max-w-2xl mx-auto mb-12">
-<span class="text-primary font-label-sm text-xs uppercase tracking-widest">3-Minute Setup</span>
-<h2 class="text-headline-md md:text-headline-lg font-headline-lg text-white mt-1">
-        How to Activate Reaction Intelligence
-      </h2>
-<p class="text-body-sm text-on-surface-variant mt-2">Zero coding required. Works seamlessly on public channels, private clubs, and high-frequency supergroups.</p>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
-<!-- Step 1 -->
-<div class="rounded-2xl glass-panel p-6 border border-outline-variant/30 relative">
-<div class="text-metric-display font-metric-display text-primary/40 mb-3">01</div>
-<h3 class="text-headline-sm font-headline-sm text-white mb-2">Add Bot to Channel</h3>
-<p class="text-body-sm text-on-surface-variant mb-4">
-          Search for <code class="text-primary bg-surface-container-high px-1.5 py-0.5 rounded font-label-sm">@%%BOT_USERNAME%%</code> in Telegram, tap Add to Channel or Group, and grant Post &amp; Read Messages permission.
-        </p>
-<div class="p-2.5 rounded-lg bg-surface-container text-xs font-label-sm text-outline flex items-center gap-2">
-<span class="material-symbols-outlined text-sm text-emerald-400" data-icon="verified">verified</span>
-          No Admin Rights Required for Groups
-        </div>
-</div>
-<!-- Step 2 -->
-<div class="rounded-2xl glass-panel p-6 border border-outline-variant/30 relative">
-<div class="text-metric-display font-metric-display text-secondary/40 mb-3">02</div>
-<h3 class="text-headline-sm font-headline-sm text-white mb-2">Telemetry Activates Instantly</h3>
-<p class="text-body-sm text-on-surface-variant mb-4">
-          The bot opens a high-speed webhook pipe to our analytical cluster. Incoming emojis are deduplicated, indexed, and evaluated for viral velocity in real time.
-        </p>
-<div class="p-2.5 rounded-lg bg-surface-container text-xs font-label-sm text-outline flex items-center gap-2">
-<span class="material-symbols-outlined text-sm text-primary" data-icon="speed">speed</span>
-          Mean Latency: &lt; 28ms Globally
-        </div>
-</div>
-<!-- Step 3 -->
-<div class="rounded-2xl glass-panel p-6 border border-outline-variant/30 relative">
-<div class="text-metric-display font-metric-display text-tertiary/40 mb-3">03</div>
-<h3 class="text-headline-sm font-headline-sm text-white mb-2">Climb the Global Leaderboard</h3>
-<p class="text-body-sm text-on-surface-variant mb-4">
-          Unlock organic discovery as millions of investors, researchers, and community builders browse the TelePulse index. Display your verified badge proudly.
-        </p>
-<div class="p-2.5 rounded-lg bg-surface-container text-xs font-label-sm text-outline flex items-center gap-2">
-<span class="material-symbols-outlined text-sm text-amber-400" data-icon="leaderboard">leaderboard</span>
-          Over 180k Monthly Visitors
-        </div>
-</div>
-</div>
-</section>
-<!-- SEO-rich FAQ Accordion Section -->
-<section class="py-16 max-w-4xl mx-auto px-4 sm:px-6" id="faq">
-<div class="text-center mb-10">
-<span class="text-primary font-label-sm text-xs uppercase tracking-widest">Knowledge Base</span>
-<h2 class="text-headline-md md:text-headline-lg font-headline-lg text-white mt-1">Frequently Asked Questions</h2>
-<p class="text-body-sm text-on-surface-variant mt-1">Everything you need to know about Telegram reaction analytics and safety.</p>
-</div>
-<div class="space-y-3" id="faq-accordion">
-<!-- Item 1 -->
-<div class="rounded-xl glass-panel border border-outline-variant/30 overflow-hidden">
-<button class="w-full p-4 text-left flex justify-between items-center text-white font-headline-sm text-base focus:outline-none faq-toggle">
-<span>Can reaction bots access private messages or member lists?</span>
-<span class="material-symbols-outlined text-outline transition-transform duration-200" data-icon="tune">tune</span>
-</button>
-<div class="px-4 pb-4 text-body-sm text-on-surface-variant hidden faq-content">
-          No. In accordance with Telegram Bot API guidelines, TelePulse Reaction Tracker only receives public reaction update payloads (<code class="text-primary font-label-sm">message_reaction</code> and <code class="text-primary font-label-sm">message_reaction_count</code>). The bot cannot read private member identities or personal communications.
-        </div>
-</div>
-<!-- Item 2 -->
-<div class="rounded-xl glass-panel border border-outline-variant/30 overflow-hidden">
-<button class="w-full p-4 text-left flex justify-between items-center text-white font-headline-sm text-base focus:outline-none faq-toggle">
-<span>How does the bot filter sybil reaction attacks and spam?</span>
-<span class="material-symbols-outlined text-outline transition-transform duration-200" data-icon="tune">tune</span>
-</button>
-<div class="px-4 pb-4 text-body-sm text-on-surface-variant hidden faq-content">
-          Our telemetry cluster checks user ID generation epochs, account activity heuristics, and cluster dispersion. Coordinated spikes from newly created bot farms are automatically excluded from velocity scores and global leaderboard rankings.
-        </div>
-</div>
-<!-- Item 3 -->
-<div class="rounded-xl glass-panel border border-outline-variant/30 overflow-hidden">
-<button class="w-full p-4 text-left flex justify-between items-center text-white font-headline-sm text-base focus:outline-none faq-toggle">
-<span>Is the bot free to use for channels and supergroups?</span>
-<span class="material-symbols-outlined text-outline transition-transform duration-200" data-icon="tune">tune</span>
-</button>
-<div class="px-4 pb-4 text-body-sm text-on-surface-variant hidden faq-content">
-          Yes! The standard tier is 100% free forever and includes real-time leaderboard listing, daily infographics, and weekly telemetry summaries. Enterprise features like private Webhooks, custom trading triggers, and raw CSV stream exports are available under Enterprise plans.
-        </div>
-</div>
-<!-- Item 4 -->
-<div class="rounded-xl glass-panel border border-outline-variant/30 overflow-hidden">
-<button class="w-full p-4 text-left flex justify-between items-center text-white font-headline-sm text-base focus:outline-none faq-toggle">
-<span>How do I get my channel verified on the global leaderboard?</span>
-<span class="material-symbols-outlined text-outline transition-transform duration-200" data-icon="tune">tune</span>
-</button>
-<div class="px-4 pb-4 text-body-sm text-on-surface-variant hidden faq-content">
-          If your channel has an official Telegram blue checkmark, TelePulse automatically imports verification. Otherwise, channels with over 10,000 active subscribers can run our one-click ownership validation command <code class="text-primary font-label-sm">/verify</code> inside the bot.
-        </div>
-</div>
-</div>
-</section>
-<!-- Deep Analytics Modal / Drawer Preview -->
-<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden opacity-0 transition-opacity duration-200" id="analytics-modal">
-<div class="w-full max-w-2xl rounded-2xl bg-surface-container-lowest border border-outline-variant/50 p-6 shadow-2xl relative">
-<button class="absolute top-4 right-4 text-outline hover:text-white p-1 rounded-lg" id="close-modal">
-<span class="material-symbols-outlined text-xl" data-icon="tune">tune</span>
-</button>
-<div class="flex items-center gap-3 mb-4">
-<div class="w-12 h-12 rounded-xl bg-surface-container-high border border-outline-variant/40 flex items-center justify-center text-2xl" id="modal-icon">
-          🔥
-        </div>
-<div>
-<h3 class="text-headline-md font-headline-md text-white flex items-center gap-1.5" id="modal-name">
-            Channel Deep Dive
-          </h3>
-<p class="text-xs text-outline font-label-sm" id="modal-handle">@handle</p>
-</div>
-</div>
-<div class="grid grid-cols-3 gap-3 mb-5">
-<div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30">
-<span class="text-[10px] font-label-sm text-outline uppercase">24h Net Volume</span>
-<div class="text-headline-sm font-metric-display text-white mt-1" id="modal-reactions">0</div>
-</div>
-<div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30">
-<span class="text-[10px] font-label-sm text-outline uppercase">Velocity Score</span>
-<div class="text-headline-sm font-metric-display text-emerald-400 mt-1" id="modal-velocity">+0%</div>
-</div>
-<div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30">
-<span class="text-[10px] font-label-sm text-outline uppercase">Audience Trust</span>
-<div class="text-headline-sm font-metric-display text-primary mt-1">99.4%</div>
-</div>
-</div>
-<!-- Emoji Weight Breakdown Bar -->
-<div class="mb-5">
-<div class="flex justify-between text-xs font-label-sm mb-1.5">
-<span class="text-white">Reaction Spectrum Distribution</span>
-<span class="text-outline">Top Emojis</span>
-</div>
-<div class="h-3 w-full rounded-full bg-surface-container-high overflow-hidden flex" id="modal-spectrum">
-<div class="bg-amber-500 h-full w-[50%]" title="Fire (50%)"></div>
-<div class="bg-primary h-full w-[25%]" title="Rocket (25%)"></div>
-<div class="bg-cyan-400 h-full w-[15%]" title="Lightning (15%)"></div>
-<div class="bg-emerald-400 h-full w-[10%]" title="Other (10%)"></div>
-</div>
-</div>
-<div class="flex justify-end gap-3 pt-2 border-t border-outline-variant/20">
-<button class="px-4 py-2 rounded-lg bg-surface-container text-xs font-label-md text-on-surface hover:bg-surface-container-high" id="modal-close-btn">
-          Close Overview
-        </button>
-<a class="px-4 py-2 rounded-lg bg-primary-container text-white text-xs font-label-md font-semibold hover:bg-primary transition-all flex items-center gap-1.5" href="#" id="modal-telegram-link" target="_blank">
-<span>Open in Telegram</span>
-<span class="material-symbols-outlined text-xs" data-icon="forum">forum</span>
-</a>
-</div>
-</div>
-</div>
-<!-- Footer -->
-<footer class="bg-surface-container-lowest border-t border-outline-variant/30 py-12 text-body-sm text-on-surface-variant">
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-<div class="grid grid-cols-2 md:grid-cols-5 gap-8 mb-10">
-<div class="col-span-2">
-<div class="flex items-center gap-2 mb-3">
-<span class="material-symbols-outlined text-primary text-2xl" data-icon="insights">insights</span>
-<span class="text-headline-sm font-headline-sm font-bold text-white tracking-tight">TelePulse OS</span>
-</div>
-<p class="text-xs text-outline max-w-sm mb-4">
-            Production telemetry cockpit and reaction index for decentralized Telegram networks. Engineered with zero-log security and sub-second webhook ingestion.
-          </p>
-<div class="flex items-center gap-2 text-xs font-label-sm text-on-surface">
-<span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-            All MTProto Relays Operational
-          </div>
-</div>
-<div>
-<h4 class="text-white text-xs font-label-sm uppercase tracking-wider mb-3">Product</h4>
-<ul class="space-y-2 text-xs">
-<li><a class="hover:text-primary transition-colors" href="#leaderboard-section">Global Leaderboard</a></li>
-<li><a class="hover:text-primary transition-colors" href="#features">Velocity Radar</a></li>
-<li><a class="hover:text-primary transition-colors" href="#how-it-works">Bot Integration</a></li>
-<li><a class="hover:text-primary transition-colors" href="#">API Docs (REST &amp; Webhooks)</a></li>
-</ul>
-</div>
-<div>
-<h4 class="text-white text-xs font-label-sm uppercase tracking-wider mb-3">Ecosystem</h4>
-<ul class="space-y-2 text-xs">
-<li><a class="hover:text-primary transition-colors" href="#">Crypto Channels</a></li>
-<li><a class="hover:text-primary transition-colors" href="#">Trading Signals</a></li>
-<li><a class="hover:text-primary transition-colors" href="#">Tech Communities</a></li>
-<li><a class="hover:text-primary transition-colors" href="#">Verification Request</a></li>
-</ul>
-</div>
-<div>
-<h4 class="text-white text-xs font-label-sm uppercase tracking-wider mb-3">Legal &amp; System</h4>
-<ul class="space-y-2 text-xs">
-<li><a class="hover:text-primary transition-colors" href="#">Privacy Telemetry</a></li>
-<li><a class="hover:text-primary transition-colors" href="#">Terms of Service</a></li>
-<li><a class="hover:text-primary transition-colors" href="#">Telegram Bot API 7.0 Compliance</a></li>
-<li><a class="hover:text-primary transition-colors" href="#">Status Dashboard</a></li>
-</ul>
-</div>
-</div>
-<div class="pt-6 border-t border-outline-variant/20 flex flex-col sm:flex-row justify-between items-center text-xs text-outline gap-3">
-<div>© 2025 %%SITE_NAME%%. All rights reserved.</div>
-<div class="flex gap-4">
-<a class="hover:text-on-surface" href="#">Privacy</a>
-<a class="hover:text-on-surface" href="#">Security</a>
-<a class="hover:text-on-surface" href="#">Ad Transparency</a>
-</div>
-</div>
-</div>
-</footer>
-<!-- Structured JavaScript Configuration & Reactive Logic -->
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-      lucide.createIcons();
-      
-      // GSAP Animations (Wow effects)
-      gsap.registerPlugin(ScrollTrigger);
-      gsap.from(".glass-panel", {
-        y: 40, opacity: 0, duration: 0.8, stagger: 0.1,
-        ease: "power3.out", scrollTrigger: { trigger: ".glass-panel", start: "top 85%" }
-      });
-      gsap.from(".gsap-fade-in", {
-        y: 20, opacity: 0, duration: 0.8, ease: "power3.out", stagger: 0.1
-      });
+    </header>
 
-      const leaderboardBody = document.getElementById("leaderboard-body");
-      
-      // Helper to escape HTML
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        <!-- Hero Section -->
+        <div class="mb-10 animate-on-load opacity-0 translate-y-4">
+            <h2 class="text-3xl font-bold text-slate-900 mb-2">Global Reaction Leaderboard</h2>
+            <p class="text-slate-600 max-w-2xl">Real-time engagement telemetry. This dashboard tracks organic reactions across all public and private Telegram communities monitored by our bot.</p>
+        </div>
+
+        <!-- AdSense Slot (Configured) -->
+        <div class="w-full bg-slate-100 border border-slate-200 rounded-md p-2 mb-8 text-center text-xs text-slate-400 min-h-[90px] flex flex-col justify-center animate-on-load opacity-0 translate-y-4">
+            <span>Advertisement</span>
+            <ins class="adsbygoogle block mt-1" data-ad-client="%%ADSENSE_CLIENT_ID%%" data-ad-slot="1234567890" data-ad-format="auto" data-full-width-responsive="true"></ins>
+            <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Top Groups -->
+            <section class="animate-on-load opacity-0 translate-y-4">
+                <div class="flex items-center gap-2 mb-4">
+                    <i data-lucide="users" class="w-5 h-5 text-slate-600"></i>
+                    <h3 class="text-xl font-semibold text-slate-800">Top Groups</h3>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-lg overflow-hidden card-shadow">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium">
+                                <tr>
+                                    <th class="py-3 px-4 w-16 text-center">Rank</th>
+                                    <th class="py-3 px-4">Group Name</th>
+                                    <th class="py-3 px-4 text-right">Total Reactions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100" id="table-groups">
+                                <tr><td colspan="3" class="text-center py-8 text-slate-400">Syncing data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Top Channels -->
+            <section class="animate-on-load opacity-0 translate-y-4">
+                <div class="flex items-center gap-2 mb-4">
+                    <i data-lucide="megaphone" class="w-5 h-5 text-slate-600"></i>
+                    <h3 class="text-xl font-semibold text-slate-800">Top Channels</h3>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-lg overflow-hidden card-shadow">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium">
+                                <tr>
+                                    <th class="py-3 px-4 w-16 text-center">Rank</th>
+                                    <th class="py-3 px-4">Channel Name</th>
+                                    <th class="py-3 px-4 text-right">Total Reactions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100" id="table-channels">
+                                <tr><td colspan="3" class="text-center py-8 text-slate-400">Syncing data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer with legal links -->
+    <footer class="bg-slate-900 text-slate-400 py-10 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div>
+                <div class="flex items-center gap-2 mb-4">
+                    <i data-lucide="bar-chart-2" class="w-5 h-5 text-slate-300"></i>
+                    <span class="font-bold text-slate-200">%%SITE_NAME%%</span>
+                </div>
+                <p class="text-sm">Organic Telegram community engagement analytics.</p>
+            </div>
+            <div>
+                <h4 class="font-semibold text-slate-200 mb-4">Legal & Privacy</h4>
+                <ul class="space-y-2 text-sm flex flex-col">
+                    <li><a href="/privacy" class="hover:text-white transition-colors">Privacy Policy</a></li>
+                    <li><a href="/terms" class="hover:text-white transition-colors">Terms of Service</a></li>
+                    <li><a href="/data" class="hover:text-white transition-colors">Data Collection & Cookie Policy</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-semibold text-slate-200 mb-4">System</h4>
+                <ul class="space-y-2 text-sm flex flex-col">
+                    <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i> API Status: Online</li>
+                    <li class="flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4 text-emerald-500"></i> Audited & Secure</li>
+                </ul>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 pt-8 border-t border-slate-800 text-sm text-center">
+            &copy; 2026 %%SITE_NAME%%. Not affiliated with Telegram.
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+      // Initialize Lucide Icons
+      lucide.createIcons();
+
+      // Escape HTML helper
       function esc(s) {
         return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
       }
 
-      function renderTable(data, emptyMsg) {
-        if (!data || data.length === 0) {
-          return `<tr><td colspan="4" class="text-center py-16 text-outline font-label-sm"><i data-lucide="inbox" class="w-6 h-6 mx-auto mb-2 opacity-50"></i> ${emptyMsg}</td></tr>`;
+      // Render Table Rows
+      function renderRows(arr, emptyMsg, type) {
+        if (!arr || arr.length === 0) {
+            return `<tr><td colspan="3" class="text-center py-12 text-slate-400 flex flex-col items-center"><i data-lucide="database" class="w-8 h-8 mb-2 opacity-50"></i> ${emptyMsg}</td></tr>`;
         }
-        
-        return data.map((item, i) => {
-          let rankBadge = `<span class="font-label-sm text-outline font-bold">#${i+1}</span>`;
-          if (i === 0) rankBadge = `<span class="w-6 h-6 rounded bg-amber-500/20 text-amber-300 font-label-sm font-bold flex items-center justify-center border border-amber-500/40">1</span>`;
-          else if (i === 1) rankBadge = `<span class="w-6 h-6 rounded bg-slate-400/20 text-slate-200 font-label-sm font-bold flex items-center justify-center border border-slate-300/40">2</span>`;
-          else if (i === 2) rankBadge = `<span class="w-6 h-6 rounded bg-amber-700/20 text-amber-300 font-label-sm font-bold flex items-center justify-center border border-amber-600/40">3</span>`;
+        return arr.map((item, i) => {
+            // Ranking indicator
+            let rankHtml = `<span class="text-slate-500 font-medium">${i+1}</span>`;
+            if (i === 0) rankHtml = `<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 text-amber-700 font-bold text-xs">1</span>`;
+            else if (i === 1) rankHtml = `<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-200 text-slate-700 font-bold text-xs">2</span>`;
+            else if (i === 2) rankHtml = `<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-100 text-orange-800 font-bold text-xs">3</span>`;
 
-          const typeBadge = item.url 
-              ? `<span class="px-2 py-0.5 rounded text-[10px] font-label-sm bg-secondary-container/20 text-secondary border border-secondary/30"><i data-lucide="globe" class="w-3 h-3 inline"></i> Public</span>` 
-              : `<span class="px-2 py-0.5 rounded text-[10px] font-label-sm bg-surface-container-high text-outline-variant border border-outline-variant/40"><i data-lucide="lock" class="w-3 h-3 inline"></i> Private</span>`;
-          
-          let titleHtml = item.url ? `<a href="${item.url}" target="_blank" class="hover:text-primary transition-colors flex items-center gap-1">${esc(item.title)} <i data-lucide="external-link" class="w-3 h-3 text-outline"></i></a>` : esc(item.title);
+            // Title with optional link
+            let titleHtml = esc(item.title);
+            if (item.url) {
+                titleHtml = `<a href="${esc(item.url)}" target="_blank" class="text-primary hover:underline flex items-center gap-1.5 font-medium">${esc(item.title)} <i data-lucide="external-link" class="w-3 h-3 text-slate-400"></i></a>`;
+            }
 
-          return `<tr class="hover:bg-surface-container-high/40 transition-colors group">
-            <td class="py-3 px-4 text-center">${rankBadge}</td>
-            <td class="py-3 px-4">
-              <div class="flex items-center gap-2.5">
-                <i data-lucide="${item.url ? 'users' : 'users-round'}" class="w-5 h-5 text-primary opacity-80"></i>
-                <div>
-                  <div class="font-headline-sm text-sm text-white flex items-center">
-                    ${titleHtml}
-                  </div>
-                </div>
-              </div>
-            </td>
-            <td class="py-3 px-3">${typeBadge}</td>
-            <td class="py-3 px-4 text-right">
-              <span class="font-metric-display text-base text-white group-hover:text-primary transition-colors">${item.total.toLocaleString()}</span>
-            </td>
-          </tr>`;
+            return `
+            <tr class="data-row border-b border-slate-50 last:border-0">
+                <td class="py-3 px-4 text-center">${rankHtml}</td>
+                <td class="py-3 px-4">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="${type === 'group' ? 'users' : 'megaphone'}" class="w-4 h-4 text-slate-400"></i>
+                        ${titleHtml}
+                    </div>
+                </td>
+                <td class="py-3 px-4 text-right">
+                    <span class="font-mono text-slate-700 bg-slate-100 px-2 py-1 rounded text-sm font-medium border border-slate-200">${item.total.toLocaleString()}</span>
+                </td>
+            </tr>`;
         }).join('');
       }
 
-      async function loadData() {
-        if(!leaderboardBody) return;
+      // Fetch and populate data
+      async function syncData() {
         try {
             const res = await fetch('/api/global_data');
             const data = await res.json();
             
-            // We have groups and channels from API. The UI has tabs.
-            window._apiData = data;
-            if(window._currentTab === 'channels') {
-                leaderboardBody.innerHTML = renderTable(data.channels, "No channels tracked yet.");
-            } else {
-                leaderboardBody.innerHTML = renderTable(data.groups, "No groups tracked yet.");
-            }
+            document.getElementById('table-groups').innerHTML = renderRows(data.groups, "No active groups found.", "group");
+            document.getElementById('table-channels').innerHTML = renderRows(data.channels, "No active channels found.", "channel");
+            
+            // Re-init icons for newly injected HTML
             lucide.createIcons();
-        } catch(e) {
-            console.error(e);
-            leaderboardBody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-error font-label-sm">Failed to load telemetry.</td></tr>`;
+        } catch (err) {
+            console.error(err);
+            const errHtml = `<tr><td colspan="3" class="text-center py-8 text-red-500 font-medium">Unable to fetch data from API.</td></tr>`;
+            document.getElementById('table-groups').innerHTML = errHtml;
+            document.getElementById('table-channels').innerHTML = errHtml;
         }
       }
 
-      window._currentTab = 'channels';
-      const tabs = document.querySelectorAll("#leaderboard-tabs button");
-      tabs.forEach(t => {
-          t.addEventListener('click', (e) => {
-              tabs.forEach(btn => btn.classList.remove('bg-surface-container-highest', 'text-on-surface', 'border-outline-variant/50'));
-              tabs.forEach(btn => btn.classList.add('text-outline', 'hover:bg-surface-container-high/50', 'border-transparent'));
-              
-              t.classList.add('bg-surface-container-highest', 'text-on-surface', 'border-outline-variant/50');
-              t.classList.remove('text-outline', 'hover:bg-surface-container-high/50', 'border-transparent');
-              
-              window._currentTab = t.id === 'tab-channels' ? 'channels' : 'groups';
-              if(window._apiData) {
-                  leaderboardBody.innerHTML = renderTable(window._currentTab === 'channels' ? window._apiData.channels : window._apiData.groups, "No records found.");
-                  lucide.createIcons();
-              }
+      // GSAP Initial Animations
+      window.onload = () => {
+          gsap.to(".animate-on-load", {
+              y: 0,
+              opacity: 1,
+              duration: 0.6,
+              stagger: 0.15,
+              ease: "power2.out"
           });
-      });
-
-      loadData();
-      setInterval(loadData, 30000);
-    });
-</script>
-</body></html>
+          
+          syncData();
+          setInterval(syncData, 30000); // 30s polling
+      };
+    </script>
+</body>
+</html>
