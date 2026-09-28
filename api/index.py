@@ -200,7 +200,7 @@ async def on_message_reaction_count(update: types.MessageReactionCountUpdated):
 async def cmd_reset_db(message: types.Message):
     admin_id = int(os.getenv("ADMIN_ID", 0))
     if admin_id == 0 or message.from_user.id != admin_id:
-        await message.reply("⛔ You are not authorized to use this command. (Requires ADMIN_ID env var)")
+        await message.reply("⛔ You are not authorized to use this command.")
         return
     if db is None:
         await message.reply("Database is not connected.")
