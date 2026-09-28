@@ -17,7 +17,7 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 # Debug: Store last 5 updates
-recent_updates = []
+# recent_updates = []
 
 # Cache MongoDB connection outside the handler for warm starts
 client = MongoClient(MONGO_URI) if MONGO_URI else None
@@ -122,10 +122,12 @@ async def telegram_webhook(request: Request):
     try:
         update_data = await request.json()
         
-        # Debug logging
-        recent_updates.insert(0, update_data)
-        if len(recent_updates) > 5:
-            recent_updates.pop()
+        # Debug logging to MongoDB
+        if db is not None:
+            try:
+                db.debug_logs.insert_one({"log": update_data})
+            except:
+                pass
             
         # Parse Telegram JSON into aiogram Update model
         update = Update(**update_data)
@@ -135,16 +137,21 @@ async def telegram_webhook(request: Request):
     except Exception as e:
         import traceback
         error_msg = f"Error processing update: {e}\n{traceback.format_exc()}"
-        recent_updates.insert(0, {"ERROR": error_msg})
-        if len(recent_updates) > 5:
-            recent_updates.pop()
+        if db is not None:
+            try:
+                db.debug_logs.insert_one({"log": {"ERROR": error_msg}})
+            except:
+                pass
         print(error_msg)
         
     return {"status": "ok"}
 
 @app.get("/api/debug_logs")
 async def debug_logs():
-    return {"logs": recent_updates}
+    if db is None:
+        return {"error": "DB not connected"}
+    logs = list(db.debug_logs.find({}, {"_id": 0}).sort("_id", -1).limit(5))
+    return {"logs": logs}
 
 @app.get("/api/setup_webhook")
 async def setup_webhook(request: Request):
