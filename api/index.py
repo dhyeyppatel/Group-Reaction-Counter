@@ -268,8 +268,8 @@ async def cmd_setinvite(message: types.Message):
     await message.answer("Invite link saved! Your group now appears as a clickable link in the Global Leaderboard.")
 
 
-@dp.message(Command("raffle"))
-async def cmd_raffle(message: types.Message):
+@dp.message(Command("uncover"))
+async def cmd_uncover(message: types.Message):
     """Pick a random winner from reactions on a replied message."""
     if message.chat.type == "private":
         await message.answer("This command must be used in a group.")
@@ -277,18 +277,18 @@ async def cmd_raffle(message: types.Message):
 
     member = await bot.get_chat_member(message.chat.id, message.from_user.id)
     if member.status not in ("administrator", "creator"):
-        await message.answer("❌ Only group admins can run a raffle.")
+        await message.answer("❌ Only group admins can run uncover.")
         return
 
     if not message.reply_to_message:
-        await message.answer("❌ You must reply to the giveaway message with <code>/raffle</code>.", parse_mode="HTML")
+        await message.answer("❌ You must reply to the giveaway message with <code>/uncover</code>.", parse_mode="HTML")
         return
 
     if col_msg_reactions is None:
         await message.answer("Database is not configured.")
         return
 
-    # Parse args: /raffle [count] [emoji]
+    # Parse args: /uncover [count] [emoji]
     parts = message.text.split()
     count = 1
     target_emoji = None
