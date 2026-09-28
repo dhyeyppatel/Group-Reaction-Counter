@@ -1147,107 +1147,137 @@ async def cron_wrapped():
 @app.get("/")
 async def serve_ui():
     html = r"""<!DOCTYPE html>
-<html class="dark" lang="en">
+<html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Reaction Tracker - Global Leaderboard</title>
-<!-- Third-party script: Tailwind CSS CDN. Data received: IP address, User-Agent, Referer. -->
+<!-- Third-party script: Tailwind CSS CDN -->
 <script src="https://cdn.tailwindcss.com"></script>
+<!-- Third-party script: Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest"></script>
 <style>
-  body { font-family: system-ui, -apple-system, sans-serif; background-color: #0f172a; color: #f8fafc; }
+  body { font-family: system-ui, -apple-system, sans-serif; background-color: #050505; color: #ededed; }
+  .glass-card { background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+  .gradient-text { background: linear-gradient(to right, #a855f7, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
   .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
-  .custom-scroll::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
-  .custom-scroll::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.25); border-radius: 9999px; }
-  .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.4); }
+  .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+  .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 9999px; }
+  .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 </style>
 </head>
-<body class="antialiased min-h-screen overflow-x-hidden flex flex-col">
+<body class="antialiased min-h-screen overflow-x-hidden flex flex-col relative">
 
-<header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
-  <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-    <div class="flex items-center gap-2">
-      <div class="w-8 h-8 rounded bg-indigo-600 flex items-center justify-center font-bold text-xl" aria-hidden="true">⚡</div>
-      <h1 class="text-xl font-bold tracking-tight text-white">Reaction Tracker</h1>
+<!-- Background Ambient Glow -->
+<div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+  <div class="absolute -top-[10%] left-[20%] w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px]"></div>
+  <div class="absolute bottom-[10%] -right-[10%] w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[150px]"></div>
+</div>
+
+<header class="border-b border-white/10 glass-card sticky top-0 z-50">
+  <div class="max-w-6xl mx-auto px-6 py-5 flex flex-col sm:flex-row justify-between items-center gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+        <i data-lucide="zap" class="text-white w-5 h-5"></i>
+      </div>
+      <h1 class="text-2xl font-bold tracking-tight text-white">TelePulse</h1>
     </div>
     <div>
-      <a href="http://t.me/dhyeyautofilterbot?startgroup=start" target="_blank" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-lg shadow-indigo-500/20">
-        + Add to your Group
+      <a href="http://t.me/dhyeyautofilterbot?startgroup=start" target="_blank" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/10 text-white px-5 py-2.5 rounded-lg font-medium transition-all">
+        <i data-lucide="plus-circle" class="w-4 h-4"></i> Add to Telegram
       </a>
     </div>
   </div>
 </header>
 
-<main class="flex-1 max-w-6xl mx-auto w-full px-4 py-8 space-y-8">
-  <div>
-    <h2 class="text-3xl font-bold text-white mb-2">Global Leaderboard</h2>
-    <p class="text-slate-400">The most active Telegram communities, ranked by reaction volume.</p>
+<main class="flex-1 max-w-6xl mx-auto w-full px-6 py-12 space-y-10 relative z-10">
+  <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <div>
+      <h2 class="text-4xl font-extrabold text-white mb-3 tracking-tight">Global <span class="gradient-text">Leaderboard</span></h2>
+      <p class="text-gray-400 text-lg">Real-time engagement index of the most active communities.</p>
+    </div>
+    <div class="flex items-center gap-2 bg-emerald-500/10 px-4 py-2 rounded-full border border-emerald-500/20">
+      <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+      <span class="text-sm font-semibold text-emerald-400">Live Sync</span>
+    </div>
   </div>
 
-  <div class="bg-slate-900/50 rounded-xl border border-slate-800 overflow-hidden shadow-xl">
+  <div class="glass-card rounded-2xl overflow-hidden shadow-2xl">
     <div class="overflow-x-auto custom-scroll">
-      <table class="w-full text-left border-collapse">
+      <table class="w-full text-left border-collapse whitespace-nowrap">
         <thead>
-          <tr class="bg-slate-800/50 text-slate-400 text-sm uppercase tracking-wider">
-            <th class="py-4 px-4 text-center w-16" scope="col">Rank</th>
-            <th class="py-4 px-4" scope="col">Community</th>
-            <th class="py-4 px-4" scope="col">Type</th>
-            <th class="py-4 px-4 text-right" scope="col">Total Reactions</th>
+          <tr class="border-b border-white/5 bg-white/5 text-gray-400 text-xs uppercase tracking-wider font-semibold">
+            <th class="py-5 px-6 text-center w-20">Rank</th>
+            <th class="py-5 px-6">Community</th>
+            <th class="py-5 px-6">Status</th>
+            <th class="py-5 px-6 text-right">Reactions</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-800 text-sm" id="leaderboard-body">
-          <tr><td colspan="4" class="text-center py-12 text-slate-500">Loading live data...</td></tr>
+        <tbody class="divide-y divide-white/5 text-sm" id="leaderboard-body">
+          <tr><td colspan="4" class="text-center py-16 text-gray-500"><div class="flex flex-col items-center gap-3 justify-center"><i data-lucide="loader-2" class="w-6 h-6 animate-spin"></i> Loading telemetry...</div></td></tr>
         </tbody>
       </table>
     </div>
   </div>
 </main>
 
-<footer class="border-t border-slate-800 bg-slate-900 py-8 mt-12">
-  <div class="max-w-6xl mx-auto px-4 text-sm text-slate-400 flex flex-col md:flex-row justify-between items-center gap-4">
-    <div>&copy; 2026 Reaction Tracker. All rights reserved.</div>
-    <div class="flex flex-wrap gap-4 md:gap-6">
-      <a href="/privacy" class="hover:text-white transition-colors">Privacy Policy</a>
-      <a href="/terms" class="hover:text-white transition-colors">Terms & Conditions</a>
-      <a href="/data" class="hover:text-white transition-colors">Data Collection</a>
+<footer class="border-t border-white/10 glass-card py-10 mt-12 relative z-10">
+  <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+    <div class="text-sm text-gray-500 flex items-center gap-2">
+      <i data-lucide="shield-check" class="w-4 h-4"></i> &copy; 2026 TelePulse. Audited & Secure.
+    </div>
+    <div class="flex flex-wrap gap-6 text-sm">
+      <a href="/privacy" class="text-gray-400 hover:text-white transition-colors flex items-center gap-1.5"><i data-lucide="file-text" class="w-4 h-4"></i> Privacy</a>
+      <a href="/terms" class="text-gray-400 hover:text-white transition-colors flex items-center gap-1.5"><i data-lucide="scale" class="w-4 h-4"></i> Terms</a>
+      <a href="/data" class="text-gray-400 hover:text-white transition-colors flex items-center gap-1.5"><i data-lucide="database" class="w-4 h-4"></i> Data Collection</a>
     </div>
   </div>
 </footer>
 
 <script>
+  lucide.createIcons();
+  
   function esc(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
+  
   async function loadGlobal() {
     const el = document.getElementById('leaderboard-body');
     try {
       const data = await fetch('/api/global_data').then(r=>r.json());
       if (!data.groups || data.groups.length === 0) {
-        el.innerHTML = '<tr><td colspan="4" class="text-center py-12 text-slate-500">No data found. Add the bot to a group!</td></tr>';
+        el.innerHTML = '<tr><td colspan="4" class="text-center py-16 text-gray-500"><div class="flex flex-col items-center gap-3 justify-center"><i data-lucide="inbox" class="w-6 h-6"></i> No data found. Add the bot to a group!</div></td></tr>';
+        lucide.createIcons();
         return;
       }
       
       const rows = data.groups.map((g, i) => {
-        let rankClass = "w-8 h-8 mx-auto rounded-lg bg-slate-800 border border-slate-700 text-slate-300 flex items-center justify-center font-bold";
-        if (i===0) rankClass = "w-8 h-8 mx-auto rounded-lg bg-yellow-500/20 border border-yellow-500/50 text-yellow-400 flex items-center justify-center font-bold shadow-[0_0_12px_rgba(234,179,8,0.3)]";
-        if (i===1) rankClass = "w-8 h-8 mx-auto rounded-lg bg-slate-300/20 border border-slate-400/50 text-slate-300 flex items-center justify-center font-bold shadow-[0_0_12px_rgba(148,163,184,0.3)]";
-        if (i===2) rankClass = "w-8 h-8 mx-auto rounded-lg bg-amber-700/30 border border-amber-600/50 text-amber-500 flex items-center justify-center font-bold shadow-[0_0_12px_rgba(180,83,9,0.3)]";
+        let rankClass = "w-10 h-10 mx-auto rounded-xl bg-white/5 border border-white/10 text-gray-300 flex items-center justify-center font-bold text-lg";
+        if (i===0) rankClass = "w-10 h-10 mx-auto rounded-xl bg-gradient-to-tr from-yellow-600/30 to-yellow-400/20 border border-yellow-500/50 text-yellow-400 flex items-center justify-center font-bold text-lg shadow-[0_0_20px_rgba(234,179,8,0.3)]";
+        if (i===1) rankClass = "w-10 h-10 mx-auto rounded-xl bg-gradient-to-tr from-slate-400/30 to-slate-300/20 border border-slate-400/50 text-slate-300 flex items-center justify-center font-bold text-lg shadow-[0_0_20px_rgba(148,163,184,0.3)]";
+        if (i===2) rankClass = "w-10 h-10 mx-auto rounded-xl bg-gradient-to-tr from-orange-700/30 to-orange-500/20 border border-orange-500/50 text-orange-400 flex items-center justify-center font-bold text-lg shadow-[0_0_20px_rgba(249,115,22,0.3)]";
         
         let rankBadge = `<div class="${rankClass}">${i+1}</div>`;
-        let titleHtml = g.url ? `<a href="${g.url}" target="_blank" class="font-medium text-white hover:text-indigo-400 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded">${esc(g.title)}</a>` : `<span class="font-medium text-white">${esc(g.title)}</span>`;
-        let pubBadge = g.url ? `<span class="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Public</span>` : `<span class="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700">Private</span>`;
+        let titleHtml = g.url ? `<a href="${g.url}" target="_blank" class="font-bold text-lg text-white hover:text-blue-400 transition-colors flex items-center gap-2">${esc(g.title)} <i data-lucide="external-link" class="w-4 h-4 text-gray-500"></i></a>` : `<span class="font-bold text-lg text-white">${esc(g.title)}</span>`;
+        let pubBadge = g.url ? `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"><i data-lucide="globe" class="w-3 h-3"></i> Public</span>` : `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/5 text-gray-400 border border-white/10"><i data-lucide="lock" class="w-3 h-3"></i> Private</span>`;
         
-        return `<tr class="hover:bg-slate-800/30 transition-colors">
-          <td class="py-4 px-4 text-center">${rankBadge}</td>
-          <td class="py-4 px-4">${titleHtml}</td>
-          <td class="py-4 px-4">${pubBadge}</td>
-          <td class="py-4 px-4 text-right"><span class="inline-block px-3 py-1 rounded bg-slate-800 text-white font-mono text-sm border border-slate-700">${g.total.toLocaleString()}</span></td>
+        return `<tr class="hover:bg-white/5 transition-colors group">
+          <td class="py-5 px-6 text-center">${rankBadge}</td>
+          <td class="py-5 px-6">${titleHtml}</td>
+          <td class="py-5 px-6">${pubBadge}</td>
+          <td class="py-5 px-6 text-right">
+            <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg bg-white/5 text-white font-mono text-base font-medium border border-white/10 group-hover:bg-purple-500/20 group-hover:border-purple-500/30 group-hover:text-purple-300 transition-colors">
+              <i data-lucide="activity" class="w-4 h-4"></i> ${g.total.toLocaleString()}
+            </span>
+          </td>
         </tr>`;
       });
       el.innerHTML = rows.join('');
+      lucide.createIcons();
     } catch(e) {
       console.error(e);
-      el.innerHTML = '<tr><td colspan="4" class="text-center py-12 text-red-400">Failed to load data.</td></tr>';
+      el.innerHTML = '<tr><td colspan="4" class="text-center py-16 text-red-400"><div class="flex flex-col items-center gap-3 justify-center"><i data-lucide="alert-triangle" class="w-6 h-6"></i> Failed to load telemetry.</div></td></tr>';
+      lucide.createIcons();
     }
   }
   document.addEventListener("DOMContentLoaded", () => {
@@ -1311,6 +1341,7 @@ async def data_collection():
   <h2>Third-Party Subprocessors</h2>
   <ul>
     <li><strong>Tailwind CSS (cdn.tailwindcss.com)</strong> - Used to style the web dashboard. May receive your IP address and User-Agent when your browser fetches the CSS.</li>
+    <li><strong>Lucide Icons (unpkg.com)</strong> - Used to load UI icons. May receive your IP address and User-Agent when your browser fetches the JS.</li>
     <li><strong>Vercel</strong> - Hosts the bot API and web dashboard.</li>
     <li><strong>MongoDB Atlas</strong> - Stores the reaction counts securely.</li>
     <li><strong>Telegram API</strong> - Our core integration.</li>
