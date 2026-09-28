@@ -39,7 +39,7 @@ async def cmd_stats(message: types.Message):
     
     # Aggregation pipeline to get top reactions in the group
     pipeline = [
-        {"$match": {"chat_id": chat_id, "user_id": {"$exists": False}}},
+        {"$match": {"chat_id": chat_id, "user_id": "GLOBAL"}},
         {"$match": {"count": {"$gt": 0}}},
         {"$sort": {"count": -1}}
     ]
@@ -84,7 +84,7 @@ async def on_reaction(reaction: types.MessageReactionUpdated):
     for r in added:
         # Increment group total
         col_reactions.update_one(
-            {"chat_id": chat_id, "reaction": r, "user_id": {"$exists": False}},
+            {"chat_id": chat_id, "reaction": r, "user_id": "GLOBAL"},
             {"$inc": {"count": 1}},
             upsert=True
         )
@@ -100,7 +100,7 @@ async def on_reaction(reaction: types.MessageReactionUpdated):
     for r in removed:
         # Decrement group total
         col_reactions.update_one(
-            {"chat_id": chat_id, "reaction": r, "user_id": {"$exists": False}},
+            {"chat_id": chat_id, "reaction": r, "user_id": "GLOBAL"},
             {"$inc": {"count": -1}}
         )
         # Decrement user specific total (if not anonymous)
@@ -159,7 +159,7 @@ async def api_stats_data():
         return {"error": "Database not configured"}
         
     pipeline = [
-        {"$match": {"user_id": {"$exists": False}}},
+        {"$match": {"user_id": "GLOBAL"}},
         {"$match": {"count": {"$gt": 0}}},
         {"$group": {"_id": "$reaction", "count": {"$sum": "$count"}}},
         {"$sort": {"count": -1}}
