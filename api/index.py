@@ -24,6 +24,24 @@ col_chats     = db.chats              if db is not None else None   # group/chan
 col_users     = db.users              if db is not None else None   # user display names
 col_msg_reactions = db.msg_reactions  if db is not None else None   # per-message reaction state
 
+# ── Gamification Roles ────────────────────────────────────────────────────────
+ROLES = [
+    (5000, "Mythical Reactor 🐉"),
+    (1000, "Reaction Royalty 👑"),
+    (500,  "Community Pillar 🏛️"),
+    (200,  "Engagement Elite 🚀"),
+    (100,  "Trend Setter 💫"),
+    (50,   "Vibe Checker 🕶️"),
+    (10,   "Spark ✨"),
+    (0,    "Observer 👀")
+]
+
+def get_title(count: int) -> str:
+    for threshold, title in ROLES:
+        if count >= threshold:
+            return title
+    return "Observer 👀"
+
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -107,6 +125,7 @@ async def cmd_start(message: types.Message):
         "👋 Hello! I am a <b>Reaction Tracker Bot</b>.\n\n"
         "📌 <i>In a group:</i> Use /stats to see that group's emoji leaderboard + top reactors.\n"
         "📌 <i>In PM:</i> Use /show to see the Global Leaderboard of all groups.\n"
+        "📌 <i>Roles & Titles:</i> Use /roles to see all unlockable gamification titles!\n"
         "📌 <i>Private group admin:</i> Use <code>/setinvite https://t.me/+yourlink</code> to add your invite link.\n\n"
         "Make sure I am an <b>Admin</b> in your groups so I can see reactions!",
         parse_mode="HTML"
@@ -165,9 +184,12 @@ async def cmd_stats(message: types.Message):
         lines.append("🏆 <b>Top Reactors in this Group:</b>")
         for i, u in enumerate(user_results):
             user_id = u["_id"]
+            total = u['total']
             info    = await resolve_user(user_id, bot)
             uname   = info.get("username")
             display = html.escape(info.get("display_name", str(user_id)))
+            
+            title_name = get_title(total)
             
             # Hyperlink user
             if uname:
@@ -176,7 +198,7 @@ async def cmd_stats(message: types.Message):
                 name_part = f'<a href="tg://user?id={user_id}">{display}</a>'
                 
             medal   = medals[i] if i < 3 else f"{i+1}."
-            lines.append(f"  {medal} {name_part} — {u['total']}")
+            lines.append(f"  {medal} {name_part} • <i>{title_name}</i> — {total}")
         lines.append("</blockquote>")
 
     await message.answer("\n".join(lines), parse_mode="HTML")
@@ -266,6 +288,19 @@ async def cmd_setinvite(message: types.Message):
             upsert=True
         )
     await message.answer("Invite link saved! Your group now appears as a clickable link in the Global Leaderboard.")
+
+
+@dp.message(Command("roles"))
+async def cmd_roles(message: types.Message):
+    """List all gamification titles."""
+    lines = [
+        "🎖️ <b>Reaction Roles & Titles</b>",
+        "React to messages in this group to level up and unlock exclusive titles!\n"
+    ]
+    for threshold, title in reversed(ROLES):
+        lines.append(f"• <b>{title}</b> : {threshold}+ reactions")
+    lines.append("\nCheck your current title by typing /stats!")
+    await message.answer("\n".join(lines), parse_mode="HTML")
 
 
 @dp.message(Command("uncover"))
@@ -522,7 +557,8 @@ async def api_group_data(chat_id: int):
             "user_id":      u["_id"],
             "display_name": info.get("display_name", str(u["_id"])),
             "username":     info.get("username"),
-            "total":        u["total"]
+            "total":        u["total"],
+            "role":         get_title(u["total"])
         })
 
     return {
@@ -783,7 +819,7 @@ async def serve_ui():
           html += '<div class="user-row">'+
             '<div class="rank-badge '+rankClass(i)+'">'+(medals[i]||rankLabel(i))+'</div>'+
             '<div class="user-avatar">'+av+'</div>'+
-            '<div class="user-name"><a href="'+userUrl+'" style="color:inherit; text-decoration:none;">'+esc(display)+'</a></div>'+
+            '<div class="user-name"><a href="'+userUrl+'" style="color:inherit; text-decoration:none;">'+esc(display)+'</a> <span style="color:var(--muted); font-size:0.85rem; font-weight:400; margin-left:6px;">• '+esc(u.role)+'</span></div>'+
             '<div class="user-count">'+u.total.toLocaleString()+' rxn</div>'+
           '</div>';
         });
