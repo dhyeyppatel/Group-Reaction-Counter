@@ -147,17 +147,20 @@ async def cmd_stats(message: types.Message):
         await message.answer("No reactions recorded yet in this group. React to some messages first!")
         return
 
-    lines = [f"📊 <b>{html.escape(chat_title)} — Reaction Stats</b>\n", "<blockquote expandable>"]
+    lines = [f"📊 <b>{html.escape(chat_title)} — Reaction Stats</b>\n"]
 
     if emoji_results:
         total = sum(r["count"] for r in emoji_results)
+        lines.append("<blockquote expandable>")
         lines.append("🎭 <b>Emoji Leaderboard:</b>")
         for r in emoji_results:
             lines.append(f"  {r['reaction']}  {r['count']}")
-        lines.append(f"  ┄ Total: <b>{total}</b>\n")
+        lines.append(f"  ┄ Total: <b>{total}</b>")
+        lines.append("</blockquote>\n")
 
     if user_results:
         medals = ["🥇", "🥈", "🥉"]
+        lines.append("<blockquote expandable>")
         lines.append("🏆 <b>Top Reactors in this Group:</b>")
         for i, u in enumerate(user_results):
             user_id = u["_id"]
@@ -173,8 +176,8 @@ async def cmd_stats(message: types.Message):
                 
             medal   = medals[i] if i < 3 else f"{i+1}."
             lines.append(f"  {medal} {name_part} — {u['total']}")
+        lines.append("</blockquote>")
 
-    lines.append("</blockquote>")
     await message.answer("\n".join(lines), parse_mode="HTML")
 
 
