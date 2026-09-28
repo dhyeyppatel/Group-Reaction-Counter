@@ -82,9 +82,18 @@ A real-time Telegram engagement leaderboard bot that tracks user reactions, rank
 - **Example:** `/setrole 500 Super VIP 👑`
 
 ### 8. /mood (Analytics)
-*Shows the current sentiment and mood breakdown.*
+*Shows a visual breakdown of the community's emotional pulse!*
 - **Who can use it:** Anyone.
-- **Output:** If used in a group, it shows the group's mood. If used in the bot's private messages, it shows the **Global** mood across all tracked groups!
+- **Output:** If used in a group, it displays that group's emotional breakdown as a gorgeous bar graph. If used in the bot's private messages, it shows the **Global** mood across all tracked groups!
+  ```text
+  ╭─ 📊 COMMUNITY PULSE ─╮
+  >   ❤️  LOVE      ████████  42%
+  >   😂  FUN       ██████    31%
+  >   🔥  HYPE      ████      19%
+  >   😮  SURPRISE  ██         8%
+    ✦ Overall vibe: HIGHLY POSITIVE ✨
+  ╰───────────────────────╯
+  ```
 
 ### 9. /setinvite <url> (Admin Command)
 *Attaches a join link to a private group so it can be clicked on the Global Leaderboard.*
