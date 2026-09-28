@@ -31,7 +31,7 @@ async def cmd_start(message: types.Message):
 
 @dp.message(Command("stats"))
 async def cmd_stats(message: types.Message):
-    if not col_reactions:
+    if col_reactions is None:
         await message.answer("Database is not configured. Please set MONGO_URI.")
         return
         
@@ -64,7 +64,7 @@ async def cmd_stats(message: types.Message):
 
 @dp.message_reaction()
 async def on_reaction(reaction: types.MessageReactionUpdated):
-    if not col_reactions:
+    if col_reactions is None:
         return
         
     chat_id = reaction.chat.id
@@ -155,7 +155,7 @@ async def setup_webhook(request: Request):
 @app.get("/api/stats_data")
 async def api_stats_data():
     """Returns JSON data for the web UI."""
-    if not col_reactions:
+    if col_reactions is None:
         return {"error": "Database not configured"}
         
     pipeline = [
