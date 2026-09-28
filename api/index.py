@@ -210,7 +210,17 @@ async def cmd_reset_db(message: types.Message):
         col_reactions.delete_many({})
         col_chats.delete_many({})
         col_msg_reactions.delete_many({})
-        await message.reply("✅ Full database has been completely reset/cleared.")
+        
+        if col_users is not None:
+            col_users.delete_many({})
+        if col_milestones is not None:
+            col_milestones.delete_many({})
+            
+        # Clear debug logs if they exist
+        db.drop_collection("debug_logs")
+        db.drop_collection("logs")
+            
+        await message.reply("✅ Full database (including debug logs) has been completely reset/cleared.")
     except Exception as e:
         await message.reply(f"Error clearing database: {e}")
 
