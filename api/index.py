@@ -398,6 +398,13 @@ async def cmd_audit(message: types.Message):
                 return
             chat_id = chat_doc["chat_id"]
             target_name = target
+        elif target.startswith("http"):
+            chat_doc = col_chats.find_one({"invite_link": target})
+            if not chat_doc:
+                await message.answer("I don't have any data for that invite link. The admin must run <code>/setinvite</code> in the group first!", parse_mode="HTML")
+                return
+            chat_id = chat_doc["chat_id"]
+            target_name = chat_doc.get("title", str(chat_id))
         else:
             try:
                 chat_id = int(target)

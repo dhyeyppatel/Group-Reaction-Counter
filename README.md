@@ -101,6 +101,7 @@ A real-time Telegram engagement leaderboard bot that tracks user reactions, rank
 - **Who can use it:** Anyone.
 - **Output:** A trust score and health check on the group's engagement. It calculates the total *organic* unique users (bot reactions are strictly ignored) and checks if engagement is suspiciously concentrated (e.g., a few people spamming reactions) vs naturally distributed.
 - **Example Use:** An advertiser can PM the bot `/audit @my_channel` to instantly verify how legitimate a channel's engagement is before buying ads!
+- **Private Channels:** Advertisers can also audit private channels by using the invite link! (e.g. `/audit https://t.me/+xyz`). *Note: the channel admin must have saved their invite link to the bot using `/setinvite` first.*
 
 ### 10. /setinvite <url> (Admin Command)
 *Attaches a join link to a private group so it can be clicked on the Global Leaderboard.*
