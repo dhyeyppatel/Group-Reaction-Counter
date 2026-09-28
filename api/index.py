@@ -1228,12 +1228,6 @@ async def cron_wrapped():
 
 @app.get("/")
 async def serve_ui():
-    try:
-        bot_info = await bot.get_me()
-        bot_username = bot_info.username
-    except Exception:
-        bot_username = "dhyeyautofilterbot"
-        
     import os, json
     
     # Paths to ui.html and config.json (at the root)
@@ -1242,25 +1236,25 @@ async def serve_ui():
         # Fallback if running directly in root
         base_dir = os.path.dirname(__file__)
         
-    html_path = os.path.join(base_dir, "ui.html")
     config_path = os.path.join(base_dir, "config.json")
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+    except Exception:
+        config = {}
+
+    try:
+        bot_info = await bot.get_me()
+        bot_username = bot_info.username
+    except Exception:
+        bot_username = config.get("botUsername", "your_bot_username")
+    html_path = os.path.join(base_dir, "ui.html")
     
     try:
         with open(html_path, "r", encoding="utf-8") as f:
             html = f.read()
     except Exception as e:
         return HTMLResponse(content=f"Error loading UI: {e}")
-        
-    try:
-        with open(config_path, "r", encoding="utf-8") as f:
-            config = json.load(f)
-    except Exception:
-        config = {
-            "siteName": "Reaction Intelligence",
-            "description": "Track live Telegram emoji reactions.",
-            "keywords": "Telegram, Reaction Tracker",
-            "adsenseClientId": ""
-        }
 
     # Replace placeholders
     html = html.replace("%%SITE_NAME%%", config.get("siteName", ""))
