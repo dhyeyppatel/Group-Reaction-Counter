@@ -44,84 +44,60 @@ A real-time Telegram engagement leaderboard bot that tracks user reactions, rank
 
 ## 🤖 Bot Commands
 
-### 1. /stats (Group Command)
-*Displays the engagement statistics for the current group.*
-- **Who can use it:** Anyone in the group.
-- **Output:** 
-  - **Emoji Leaderboard:** Shows the top emojis used in the group and their counts.
-  - **Top Reactors:** Shows a ranked leaderboard (🥇, 🥈, 🥉) of the top 50 most active human users in the group.
-- **Note:** Displays inside an expandable blockquote to prevent long scrolling.
+### 👥 Group Commands
+These commands are meant to be used inside your group or channel.
 
-### 2. /show (PM Command)
-*Displays the Global Leaderboard of all communities tracked by the bot.*
-- **Who can use it:** Anyone (best used in private messages with the bot).
-- **Output:** Ranks up to 50 different Telegram groups/channels by their total reaction count. Public groups and private groups with invite links will be rendered as clickable hyperlinks.
+#### 1. /stats (User Leaderboard)
+*Shows your personal standing in the group.*
+- **Output:** Displays the current group's Top 3 Reactors and your personal rank.
 
-### 3. /uncover (Admin Giveaways)
-*Randomly picks a winner from the users who reacted to a specific message.*
-- **Who can use it:** Group Admins only.
-- **How to use:** You **must reply** to the target message (e.g., the giveaway announcement).
-- **Syntax Options:**
-  - /uncover : Picks 1 random winner from *any* reaction on the message.
-  - /uncover 🎉 : Picks 1 random winner exclusively from the people who reacted with 🎉.
-  - /uncover 3 : Picks 3 random winners.
-  - /uncover 5 ❤️ : Picks 5 random winners who reacted with ❤️.
+#### 2. /show (Group Leaderboard)
+*Shows the absolute top 50 most active members in the group!*
+- **Output:** A densely packed, highly formatted `<blockquote expandable>` containing the top 50 users and their reaction counts.
 
-### 4. /roles (Gamification)
+#### 3. /uncover <emoji> (Giveaways)
+*Randomly picks a winner from people who reacted to the message you reply to!*
+- **How to use:** Reply to a message with `/uncover 🎉` to pick a random user who reacted with 🎉 to that message.
+
+#### 4. /roles (Gamification)
 *Lists all the unlockable reaction titles.*
-- **Who can use it:** Anyone.
-- **Output:** A beautiful list of requirements to reach the next tier (e.g., 500+ for Community Pillar 🏛️).
 - **Auto-Announcements:** When you hit a milestone, the bot will automatically drop a celebratory message in the group AND send you a private PM to congratulate you on your new role!
 
-### 5. /themes (Group Command)
+#### 5. /themes (Admin Command)
 *Lists all available Gamification themes (e.g., Anime, Gaming, Crypto).*
-- **Who can use it:** Anyone in the group.
 
-### 6. /settheme <theme_name> (Admin Command)
-*Changes the group's Gamification theme.*
-- **Who can use it:** Group Admins only.
-- **Example:** `/settheme cyberpunk`
+#### 6. /settheme <name> (Admin Command)
+*Changes the group's theme for the `/stats` output.*
 
-### 7. /setrole <count> <title> (Admin Command)
-*Creates a completely custom role for your group at a specific reaction threshold.*
-- **Who can use it:** Group Admins only.
-- **Example:** `/setrole 500 Super VIP 👑`
+#### 7. /setrole <count> <Title> (Admin Command)
+*Lets group admins create custom unlockable titles.*
 
-### 8. /mood (Analytics)
-*Shows a visual breakdown of the community's emotional pulse!*
-- **Who can use it:** Anyone.
-- **Output:** If used in a group, it displays that group's emotional breakdown as a gorgeous bar graph. If used in the bot's private messages, it shows the **Global** mood across all tracked groups!
-  ```text
-  ╭─ 📊 COMMUNITY PULSE ─╮
-  >   ❤️  LOVE      ████████  42%
-  >   😂  FUN       ██████    31%
-  >   🔥  HYPE      ████      19%
-  >   😮  SURPRISE  ██         8%
-    ✦ Overall vibe: HIGHLY POSITIVE ✨
-  ╰───────────────────────╯
-  ```
+#### 8. /mood (Analytics)
+*Shows a visual breakdown of the group's emotional pulse as a beautiful bar graph.*
 
-### 9. /audit [group] (Analytics)
-*Provides a fair and comprehensive engagement audit for advertisers.*
-- **Who can use it:** Anyone.
-- **Output:** A trust score and health check on the group's engagement. It calculates the total *organic* unique users (bot reactions are strictly ignored) and checks if engagement is suspiciously concentrated (e.g., a few people spamming reactions) vs naturally distributed.
-- **Example Use:** An advertiser can PM the bot `/audit @my_channel` to instantly verify how legitimate a channel's engagement is before buying ads!
-- **Private Channels:** Advertisers can also audit private channels by using the invite link! (e.g. `/audit https://t.me/+xyz`). *Note: the channel admin must have saved their invite link to the bot using `/setinvite` first.*
+#### 9. /top (Content Discovery)
+*Highlights the most highly reacted message of the day in the group.*
 
-### 10. /top (Content Discovery)
-*Highlights the most highly reacted message of the day.*
-- **Who can use it:** Anyone in the group.
-- **Output:** Provides a direct link to the absolute best "Top Post of the Day" in the group, calculated by recent active reactions.
-
-### 11. /setinvite <url> (Admin Command)
+#### 10. /setinvite <url> (Admin Command)
 *Attaches a join link to a private group so it can be clicked on the Global Leaderboard.*
-- **Who can use it:** Group Admins only.
-- **How to use:** `/setinvite https://t.me/+your_private_link`
-- **Why use it?** If your group is private, the bot doesn't know how to link to it in the `/show` global dashboard. This command securely saves your invite link so others can discover and join your community from the leaderboard.
 
-### 12. /start
+#### 11. /forcewrapped (Admin Command)
+*Manually triggers the Weekly Wrapped report for testing.*
+
+### 👤 Private Message (PM) Commands
+These commands are meant to be used in a direct message with the bot.
+
+#### 1. /start
 *Standard onboarding message.*
-- Explains basic bot functionality and reminds admins to give the bot admin privileges.
+- Displays a beautiful inline menu to navigate commands and features.
+
+#### 2. /audit [group] (Analytics)
+*Provides a fair and comprehensive engagement audit for advertisers.*
+- **How to use:** `/audit @my_channel` or `/audit https://t.me/+xyz` (if private).
+- **Output:** A trust score and health check on the group's engagement. Bot reactions are strictly ignored.
+
+#### 3. /mood (Analytics)
+*When used in PM, it shows the **Global** mood across all tracked groups!*
 
 ---
 
