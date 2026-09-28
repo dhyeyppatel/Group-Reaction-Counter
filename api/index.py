@@ -474,6 +474,26 @@ async def cmd_audit(message: types.Message):
     await message.answer("\n".join(lines), parse_mode="HTML")
 
 
+@dp.message(Command("forcewrapped"))
+async def cmd_forcewrapped(message: types.Message):
+    """Admin command to manually trigger the Weekly Wrapped report for testing."""
+    if message.chat.type == "private":
+        await message.answer("Use this inside a group to force trigger the weekly wrapped.")
+        return
+        
+    member = await bot.get_chat_member(message.chat.id, message.from_user.id)
+    if member.status not in ("administrator", "creator"):
+        await message.answer("Only admins can force-trigger wrapped.")
+        return
+        
+    await message.answer("Triggering Weekly Wrapped manually...")
+    try:
+        res = await cron_wrapped()
+        await message.answer(f"Wrapped triggered! Status: {res}")
+    except Exception as e:
+        await message.answer(f"Error: {e}")
+
+
 @dp.message(Command("setinvite"))
 async def cmd_setinvite(message: types.Message):
     """Allow private group admins to set an invite link for the global leaderboard."""
