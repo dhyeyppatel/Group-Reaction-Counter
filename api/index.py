@@ -1230,7 +1230,7 @@ async def cron_wrapped():
 async def serve_ui():
     try:
         bot_info = await bot.get_me()
-        "dhyeyautofilterbot" = bot_info.username
+        bot_username = bot_info.username
     except Exception:
         bot_username = "dhyeyautofilterbot"
         
