@@ -374,6 +374,99 @@ async def cmd_mood(message: types.Message):
     await message.answer("\n".join(lines), parse_mode="HTML")
 
 
+@dp.message(Command("audit"))
+async def cmd_audit(message: types.Message):
+    """Audit the engagement of a group/channel."""
+    if col_reactions is None:
+        await message.answer("Database not configured.")
+        return
+
+    chat_id = None
+    target_name = "this group"
+    
+    parts = message.text.split()
+    if message.chat.type == "private":
+        if len(parts) < 2:
+            await message.answer("Please provide a group username or ID to audit.\nExample: <code>/audit @mygroup</code>", parse_mode="HTML")
+            return
+        target = parts[1]
+        
+        if target.startswith("@"):
+            chat_doc = col_chats.find_one({"username": {"$regex": f"^{target.replace('@', '')}$", "$options": "i"}})
+            if not chat_doc:
+                await message.answer(f"I don't have any data for {target}. Make sure I am an admin in that group/channel!")
+                return
+            chat_id = chat_doc["chat_id"]
+            target_name = target
+        else:
+            try:
+                chat_id = int(target)
+                chat_doc = col_chats.find_one({"chat_id": chat_id})
+                if chat_doc:
+                    target_name = chat_doc.get("title", str(chat_id))
+            except ValueError:
+                await message.answer("Invalid chat ID or username.")
+                return
+    else:
+        chat_id = message.chat.id
+        target_name = message.chat.title
+
+    if not chat_id:
+        await message.answer("Could not resolve the group.")
+        return
+
+    pipeline = [
+        {"$match": {"chat_id": chat_id, "user_id": {"$ne": "GLOBAL"}, "count": {"$gt": 0}}},
+        {"$group": {"_id": "$user_id", "total": {"$sum": "$count"}}},
+        {"$sort": {"total": -1}}
+    ]
+    
+    user_stats = list(col_reactions.aggregate(pipeline))
+    
+    if not user_stats:
+        await message.answer(f"No reaction data found for {html.escape(target_name)}.")
+        return
+        
+    total_organic_reactions = sum(u["total"] for u in user_stats)
+    unique_users = len(user_stats)
+    
+    top_user = user_stats[0]
+    dominance = (top_user["total"] / total_organic_reactions) * 100 if total_organic_reactions > 0 else 0
+    
+    if unique_users < 3:
+        health_emoji = "🔴"
+        health_text = "Poor (Too few participants)"
+        trust_score = 30
+    elif dominance > 50:
+        health_emoji = "🟡"
+        health_text = "Suspicious (One user dominates)"
+        trust_score = 50
+    elif dominance > 30:
+        health_emoji = "🟢"
+        health_text = "Fair (Moderate distribution)"
+        trust_score = 75
+    else:
+        health_emoji = "🌟"
+        health_text = "Excellent (Organic & highly distributed)"
+        trust_score = 98
+
+    lines = [
+        f"🛡️ <b>ENGAGEMENT AUDIT REPORT</b>",
+        f"<b>Target:</b> {html.escape(target_name)}",
+        "",
+        f"👥 <b>Unique Active Humans:</b> {unique_users:,}",
+        f"❤️ <b>Total Organic Reactions:</b> {total_organic_reactions:,}",
+        f"📊 <b>Avg Reactions/User:</b> {round(total_organic_reactions / unique_users, 1) if unique_users > 0 else 0}",
+        "",
+        f"<b>Audit Health:</b> {health_emoji} {health_text}",
+        f"<b>Trust Score:</b> {trust_score}/100",
+        "",
+        "<i>Note: Bots and automated accounts are strictly excluded from these metrics to ensure fair auditing for advertisers.</i>"
+    ]
+    
+    await message.answer("\n".join(lines), parse_mode="HTML")
+
+
 @dp.message(Command("setinvite"))
 async def cmd_setinvite(message: types.Message):
     """Allow private group admins to set an invite link for the global leaderboard."""
