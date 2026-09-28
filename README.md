@@ -81,13 +81,18 @@ A real-time Telegram engagement leaderboard bot that tracks user reactions, rank
 - **Who can use it:** Group Admins only.
 - **Example:** `/setrole 500 Super VIP 👑`
 
-### 8. /setinvite <url> (Admin Command)
+### 8. /mood (Analytics)
+*Shows the current sentiment and mood breakdown.*
+- **Who can use it:** Anyone.
+- **Output:** If used in a group, it shows the group's mood. If used in the bot's private messages, it shows the **Global** mood across all tracked groups!
+
+### 9. /setinvite <url> (Admin Command)
 *Attaches a join link to a private group so it can be clicked on the Global Leaderboard.*
 - **Who can use it:** Group Admins only.
 - **How to use:** `/setinvite https://t.me/+your_private_link`
 - **Why use it?** If your group is private, the bot doesn't know how to link to it in the `/show` global dashboard. This command securely saves your invite link so others can discover and join your community from the leaderboard.
 
-### 9. /start
+### 10. /start
 *Standard onboarding message.*
 - Explains basic bot functionality and reminds admins to give the bot admin privileges.
 

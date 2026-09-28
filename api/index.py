@@ -285,6 +285,78 @@ async def cmd_show(message: types.Message):
     await message.answer("\n".join(lines), parse_mode="HTML")
 
 
+@dp.message(Command("mood"))
+async def cmd_mood(message: types.Message):
+    """Show global or group mood."""
+    if col_reactions is None:
+        await message.answer("Database not configured.")
+        return
+
+    is_pm = message.chat.type == "private"
+    
+    if is_pm:
+        emoji_results = list(col_reactions.aggregate([
+            {"$match": {"user_id": "GLOBAL", "count": {"$gt": 0}}},
+            {"$group": {"_id": "$reaction", "count": {"$sum": "$count"}}}
+        ]))
+        title_text = "🌍 <b>Global Community Mood</b>"
+    else:
+        emoji_results = list(col_reactions.aggregate([
+            {"$match": {"chat_id": message.chat.id, "user_id": "GLOBAL", "count": {"$gt": 0}}},
+            {"$group": {"_id": "$reaction", "count": {"$sum": "$count"}}}
+        ]))
+        title_text = f"📊 <b>Mood for {html.escape(message.chat.title or 'this group')}</b>"
+        
+    pos = 0
+    neg = 0
+    neu = 0
+    
+    for r in emoji_results:
+        emoji = r["_id"]
+        count = r["count"]
+        if emoji in POSITIVE_EMOJIS:
+            pos += count
+        elif emoji in NEGATIVE_EMOJIS:
+            neg += count
+        else:
+            neu += count
+            
+    total = pos + neg + neu
+    if total == 0:
+        await message.answer(f"{title_text}\n\nNo reactions recorded yet!", parse_mode="HTML")
+        return
+        
+    total_sentiment = pos + neg
+    score = round((pos / total_sentiment * 100) if total_sentiment > 0 else 0, 1)
+    
+    if score >= 80:
+        mood_emoji = "🟢"
+        mood_text = "Highly Positive! ✨"
+    elif score >= 50:
+        mood_emoji = "🟡"
+        mood_text = "Mixed/Neutral ⚖️"
+    elif total_sentiment == 0:
+        mood_emoji = "⚪"
+        mood_text = "Neutral (No strong sentiment) 😐"
+    else:
+        mood_emoji = "🔴"
+        mood_text = "Negative! ⚠️"
+
+    lines = [
+        title_text,
+        f"<b>Positivity Score:</b> {score}%",
+        f"<b>Overall Vibe:</b> {mood_emoji} {mood_text}",
+        "",
+        f"❤️ <b>Positive:</b> {pos:,}",
+        f"🤬 <b>Negative:</b> {neg:,}",
+        f"😐 <b>Neutral:</b> {neu:,}",
+        "",
+        "<i>Check the web dashboard for a full Mood Line Graph!</i>"
+    ]
+    
+    await message.answer("\n".join(lines), parse_mode="HTML")
+
+
 @dp.message(Command("setinvite"))
 async def cmd_setinvite(message: types.Message):
     """Allow private group admins to set an invite link for the global leaderboard."""
