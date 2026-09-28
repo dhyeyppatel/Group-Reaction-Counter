@@ -543,6 +543,11 @@ async def cmd_audit(message: types.Message):
     if not chat_id:
         await message.answer("Could not resolve the group.")
         return
+        
+    chat_doc = col_chats.find_one({"chat_id": chat_id})
+    if chat_doc and chat_doc.get("type") == "channel":
+        await message.answer(f"⚠️ <b>Audit Unavailable</b>\n\nTelegram keeps all channel reactions completely anonymous. Because we cannot see <i>who</i> is reacting in <b>{html.escape(target_name)}</b>, we cannot filter out bots or calculate a trust score.", parse_mode="HTML")
+        return
 
     pipeline = [
         {"$match": {"chat_id": chat_id, "user_id": {"$ne": "GLOBAL"}, "count": {"$gt": 0}}},
