@@ -486,12 +486,50 @@ async def cmd_forcewrapped(message: types.Message):
         await message.answer("Only admins can force-trigger wrapped.")
         return
         
-    await message.answer("Triggering Weekly Wrapped manually...")
     try:
-        res = await cron_wrapped()
-        await message.answer(f"Wrapped triggered! Status: {res}")
+        await cron_wrapped()
     except Exception as e:
         await message.answer(f"Error: {e}")
+
+
+@dp.message(Command("top"))
+async def cmd_top(message: types.Message):
+    """Show the Top Post of the day."""
+    if message.chat.type == "private":
+        await message.answer("Use this inside a group.")
+        return
+        
+    chat_id = message.chat.id
+    one_day_ago = (datetime.datetime.utcnow() - datetime.timedelta(days=1)).isoformat()
+    
+    pipeline = [
+        {"$match": {"chat_id": chat_id, "active": True, "date": {"$gte": one_day_ago}}},
+        {"$group": {"_id": "$message_id", "total": {"$sum": 1}}},
+        {"$sort": {"total": -1}},
+        {"$limit": 1}
+    ]
+    
+    results = list(col_msg_reactions.aggregate(pipeline))
+    if not results:
+        await message.answer("No reactions recorded in the last 24 hours.")
+        return
+        
+    top_msg_id = results[0]["_id"]
+    total_rxn = results[0]["total"]
+    
+    chat_doc = col_chats.find_one({"chat_id": chat_id}) if col_chats is not None else None
+    if chat_doc and chat_doc.get("username"):
+        link = f"https://t.me/{chat_doc['username']}/{top_msg_id}"
+    else:
+        clean_chat_id = str(chat_id).replace("-100", "")
+        link = f"https://t.me/c/{clean_chat_id}/{top_msg_id}"
+        
+    lines = [
+        "🏆 <b>Top Post of the Day</b> 🏆\n",
+        f"This <a href='{link}'>message</a> is on fire today with <b>{total_rxn}</b> reactions! 🔥"
+    ]
+    
+    await message.answer("\n".join(lines), parse_mode="HTML")
 
 
 @dp.message(Command("setinvite"))

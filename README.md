@@ -108,13 +108,18 @@ A real-time Telegram engagement leaderboard bot that tracks user reactions, rank
 - **Example Use:** An advertiser can PM the bot `/audit @my_channel` to instantly verify how legitimate a channel's engagement is before buying ads!
 - **Private Channels:** Advertisers can also audit private channels by using the invite link! (e.g. `/audit https://t.me/+xyz`). *Note: the channel admin must have saved their invite link to the bot using `/setinvite` first.*
 
-### 10. /setinvite <url> (Admin Command)
+### 10. /top (Content Discovery)
+*Highlights the most highly reacted message of the day.*
+- **Who can use it:** Anyone in the group.
+- **Output:** Provides a direct link to the absolute best "Top Post of the Day" in the group, calculated by recent active reactions.
+
+### 11. /setinvite <url> (Admin Command)
 *Attaches a join link to a private group so it can be clicked on the Global Leaderboard.*
 - **Who can use it:** Group Admins only.
 - **How to use:** `/setinvite https://t.me/+your_private_link`
 - **Why use it?** If your group is private, the bot doesn't know how to link to it in the `/show` global dashboard. This command securely saves your invite link so others can discover and join your community from the leaderboard.
 
-### 11. /start
+### 12. /start
 *Standard onboarding message.*
 - Explains basic bot functionality and reminds admins to give the bot admin privileges.
 
