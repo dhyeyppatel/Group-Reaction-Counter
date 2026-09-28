@@ -7,6 +7,11 @@ from aiogram.filters import Command
 from pymongo import MongoClient
 import html
 
+try:
+    from api.themes import THEMES
+except ImportError:
+    from themes import THEMES
+
 # ── Environment ─────────────────────────────────────────────────────────────
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 MONGO_URI  = os.environ.get("MONGO_URI")
@@ -25,22 +30,26 @@ col_users     = db.users              if db is not None else None   # user displ
 col_msg_reactions = db.msg_reactions  if db is not None else None   # per-message reaction state
 
 # ── Gamification Roles ────────────────────────────────────────────────────────
-ROLES = [
-    (5000, "Mythical Reactor 🐉"),
-    (1000, "Reaction Royalty 👑"),
-    (500,  "Community Pillar 🏛️"),
-    (200,  "Engagement Elite 🚀"),
-    (100,  "Trend Setter 💫"),
-    (50,   "Vibe Checker 🕶️"),
-    (10,   "Spark ✨"),
-    (0,    "Observer 👀")
-]
 
-def get_title(count: int) -> str:
-    for threshold, title in ROLES:
+def get_roles_for_chat(chat_doc: dict) -> list:
+    if not chat_doc:
+        return THEMES["default"]
+    
+    # 1. Custom roles set by admin
+    if chat_doc.get("custom_roles"):
+        roles = [(r["threshold"], r["title"]) for r in chat_doc["custom_roles"]]
+        roles.sort(key=lambda x: x[0], reverse=True)
+        return roles
+        
+    # 2. Selected theme
+    theme_key = chat_doc.get("theme", "default")
+    return THEMES.get(theme_key, THEMES["default"])
+
+def get_title(count: int, roles: list) -> str:
+    for threshold, title in roles:
         if count >= threshold:
             return title
-    return "Observer 👀"
+    return roles[-1][1] if roles else "Observer 👀"
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -125,7 +134,7 @@ async def cmd_start(message: types.Message):
         "👋 Hello! I am a <b>Reaction Tracker Bot</b>.\n\n"
         "📌 <i>In a group:</i> Use /stats to see that group's emoji leaderboard + top reactors.\n"
         "📌 <i>In PM:</i> Use /show to see the Global Leaderboard of all groups.\n"
-        "📌 <i>Roles & Titles:</i> Use /roles to see all unlockable gamification titles!\n"
+        "📌 <i>Roles & Titles:</i> Use /themes to customize roles or /roles to see them!\n"
         "📌 <i>Private group admin:</i> Use <code>/setinvite https://t.me/+yourlink</code> to add your invite link.\n\n"
         "Make sure I am an <b>Admin</b> in your groups so I can see reactions!",
         parse_mode="HTML"
@@ -182,6 +191,10 @@ async def cmd_stats(message: types.Message):
         medals = ["🥇", "🥈", "🥉"]
         lines.append("<blockquote expandable>")
         lines.append("🏆 <b>Top Reactors in this Group:</b>")
+        
+        chat_doc = col_chats.find_one({"chat_id": chat_id}, {"_id": 0}) if col_chats is not None else None
+        roles = get_roles_for_chat(chat_doc)
+        
         for i, u in enumerate(user_results):
             user_id = u["_id"]
             total = u['total']
@@ -189,7 +202,7 @@ async def cmd_stats(message: types.Message):
             uname   = info.get("username")
             display = html.escape(info.get("display_name", str(user_id)))
             
-            title_name = get_title(total)
+            title_name = get_title(total, roles)
             
             # Hyperlink user
             if uname:
@@ -293,14 +306,100 @@ async def cmd_setinvite(message: types.Message):
 @dp.message(Command("roles"))
 async def cmd_roles(message: types.Message):
     """List all gamification titles."""
+    chat_doc = col_chats.find_one({"chat_id": message.chat.id}, {"_id": 0}) if col_chats is not None else None
+    roles = get_roles_for_chat(chat_doc)
+    
     lines = [
         "🎖️ <b>Reaction Roles & Titles</b>",
         "React to messages in this group to level up and unlock exclusive titles!\n"
     ]
-    for threshold, title in reversed(ROLES):
+    for threshold, title in reversed(roles):
         lines.append(f"• <b>{title}</b> : {threshold}+ reactions")
-    lines.append("\nCheck your current title by typing /stats!")
+    lines.append("\nGroup Admins can change this list with <code>/themes</code> or <code>/setrole</code>.")
+    lines.append("Check your current title by typing /stats!")
     await message.answer("\n".join(lines), parse_mode="HTML")
+
+
+@dp.message(Command("themes"))
+async def cmd_themes(message: types.Message):
+    """List available gamification themes."""
+    lines = ["🎨 <b>Available Gamification Themes</b>\n"]
+    for k in THEMES.keys():
+        lines.append(f"• <code>{k}</code>")
+    lines.append("\nSet a theme using <code>/settheme &lt;theme_name&gt;</code>")
+    lines.append("Or create a custom role using <code>/setrole &lt;count&gt; &lt;Title Name&gt;</code>")
+    await message.answer("\n".join(lines), parse_mode="HTML")
+
+
+@dp.message(Command("settheme"))
+async def cmd_settheme(message: types.Message):
+    if message.chat.type == "private":
+        await message.answer("Use this in a group.")
+        return
+        
+    member = await bot.get_chat_member(message.chat.id, message.from_user.id)
+    if member.status not in ("administrator", "creator"):
+        await message.answer("❌ Only group admins can change the theme.")
+        return
+
+    parts = message.text.split(maxsplit=1)
+    if len(parts) < 2:
+        await message.answer("Usage: <code>/settheme &lt;theme_name&gt;</code>\nCheck /themes for a list.", parse_mode="HTML")
+        return
+        
+    theme_name = parts[1].strip().lower()
+    if theme_name not in THEMES:
+        await message.answer(f"❌ Theme '{theme_name}' not found. Check /themes.")
+        return
+        
+    if col_chats is not None:
+        col_chats.update_one(
+            {"chat_id": message.chat.id},
+            {"$set": {"theme": theme_name}, "$unset": {"custom_roles": ""}},
+            upsert=True
+        )
+        
+    await message.answer(f"✅ Theme set to <b>{theme_name}</b>!\nCheck /roles to see the new titles.", parse_mode="HTML")
+
+
+@dp.message(Command("setrole"))
+async def cmd_setrole(message: types.Message):
+    if message.chat.type == "private":
+        return
+        
+    member = await bot.get_chat_member(message.chat.id, message.from_user.id)
+    if member.status not in ("administrator", "creator"):
+        await message.answer("❌ Only group admins can set custom roles.")
+        return
+
+    parts = message.text.split(maxsplit=2)
+    if len(parts) < 3 or not parts[1].isdigit():
+        await message.answer("Usage: <code>/setrole &lt;reactions_needed&gt; &lt;Title Name&gt;</code>\nExample: <code>/setrole 100 🌟 Super Fan</code>", parse_mode="HTML")
+        return
+        
+    threshold = int(parts[1])
+    title = parts[2].strip()
+    
+    if col_chats is not None:
+        chat_doc = col_chats.find_one({"chat_id": message.chat.id}) or {}
+        custom_roles = chat_doc.get("custom_roles", [])
+        
+        updated = False
+        for r in custom_roles:
+            if r["threshold"] == threshold:
+                r["title"] = title
+                updated = True
+                break
+        if not updated:
+            custom_roles.append({"threshold": threshold, "title": title})
+            
+        col_chats.update_one(
+            {"chat_id": message.chat.id},
+            {"$set": {"custom_roles": custom_roles}},
+            upsert=True
+        )
+        
+    await message.answer(f"✅ Custom role added: <b>{title}</b> at {threshold}+ reactions.\nCheck /roles to see your custom list.", parse_mode="HTML")
 
 
 @dp.message(Command("uncover"))
@@ -539,16 +638,19 @@ async def api_group_data(chat_id: int):
         {"$limit": 10}
     ]))
 
-    doc   = col_chats.find_one({"chat_id": chat_id}, {"_id": 0}) if col_chats is not None else None
-    if not doc and col_chats is not None:
+    chat_doc   = col_chats.find_one({"chat_id": chat_id}, {"_id": 0}) if col_chats is not None else None
+    
+    # Fallback to API if not cached
+    if not chat_doc and col_chats is not None:
         try:
             chat = await bot.get_chat(chat_id)
             save_chat_meta(chat)
-            doc = col_chats.find_one({"chat_id": chat_id}, {"_id": 0})
+            chat_doc = col_chats.find_one({"chat_id": chat_id}, {"_id": 0})
         except Exception:
             pass
             
-    title = doc.get("title", str(chat_id)) if doc else str(chat_id)
+    title = chat_doc.get("title", str(chat_id)) if chat_doc else str(chat_id)
+    roles = get_roles_for_chat(chat_doc)
 
     users = []
     for u in user_results:
@@ -558,7 +660,7 @@ async def api_group_data(chat_id: int):
             "display_name": info.get("display_name", str(u["_id"])),
             "username":     info.get("username"),
             "total":        u["total"],
-            "role":         get_title(u["total"])
+            "role":         get_title(u["total"], roles)
         })
 
     return {

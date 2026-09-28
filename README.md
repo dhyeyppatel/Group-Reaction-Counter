@@ -61,13 +61,27 @@ A real-time Telegram engagement leaderboard bot that tracks user reactions, rank
 - **Who can use it:** Anyone.
 - **Output:** A beautiful list of requirements to reach the next tier (e.g., 500+ for Community Pillar 🏛️).
 
-### 5. /setinvite <url> (Admin Command)
+### 5. /themes (Group Command)
+*Lists all available Gamification themes (e.g., Anime, Gaming, Crypto).*
+- **Who can use it:** Anyone in the group.
+
+### 6. /settheme <theme_name> (Admin Command)
+*Changes the group's Gamification theme.*
+- **Who can use it:** Group Admins only.
+- **Example:** `/settheme cyberpunk`
+
+### 7. /setrole <count> <title> (Admin Command)
+*Creates a completely custom role for your group at a specific reaction threshold.*
+- **Who can use it:** Group Admins only.
+- **Example:** `/setrole 500 Super VIP 👑`
+
+### 8. /setinvite <url> (Admin Command)
 *Attaches a join link to a private group so it can be clicked on the Global Leaderboard.*
 - **Who can use it:** Group Admins only.
-- **How to use:** /setinvite https://t.me/+your_private_link
-- **Why use it?** If your group is private, the bot doesn't know how to link to it in the /show global dashboard. This command securely saves your invite link so others can discover and join your community from the leaderboard.
+- **How to use:** `/setinvite https://t.me/+your_private_link`
+- **Why use it?** If your group is private, the bot doesn't know how to link to it in the `/show` global dashboard. This command securely saves your invite link so others can discover and join your community from the leaderboard.
 
-### 6. /start
+### 9. /start
 *Standard onboarding message.*
 - Explains basic bot functionality and reminds admins to give the bot admin privileges.
 
