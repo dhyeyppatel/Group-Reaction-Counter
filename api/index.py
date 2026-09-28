@@ -18,8 +18,8 @@ dp = Dispatcher()
 
 # Cache MongoDB connection outside the handler for warm starts
 client = MongoClient(MONGO_URI) if MONGO_URI else None
-db = client.reaction_bot if client else None
-col_reactions = db.reactions if db else None
+db = client.reaction_bot if client is not None else None
+col_reactions = db.reactions if db is not None else None
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
