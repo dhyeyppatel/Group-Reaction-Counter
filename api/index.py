@@ -723,10 +723,10 @@ async def cmd_top(message: types.Message):
         total_rxn = res["total"]
         
         if chat_doc and chat_doc.get("username"):
-            link = f"https://t.me/{chat_doc['username']}/{msg_id}"
+            link = f"tg://resolve?domain={chat_doc['username']}&post={msg_id}"
         else:
             clean_chat_id = str(chat_id).replace("-100", "")
-            link = f"https://t.me/c/{clean_chat_id}/{msg_id}"
+            link = f"tg://privatepost?channel={clean_chat_id}&post={msg_id}"
             
         lines.append(f"{i+1}. <a href='{link}'>Message</a> — <b>{total_rxn}</b> reactions 🔥")
     
