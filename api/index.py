@@ -1006,7 +1006,7 @@ async def cmd_uncover(message: types.Message):
 
     # Parse args: /uncover [count] [emoji]
     parts = message.text.split()
-    count = 1
+    count = 10
     display_emoji = None
     
     for part in parts[1:]:
@@ -1027,28 +1027,27 @@ async def cmd_uncover(message: types.Message):
 
     query = {"chat_id": chat_id, "message_id": msg_id, "active": True}
     
-    if custom_emoji_id:
-        query["reaction"] = custom_emoji_id
-    elif display_emoji:
-        base = display_emoji.replace("\ufe0f", "")
-        query["reaction"] = {"$in": [display_emoji, base, base + "\ufe0f"]}
-        
     pipeline = [
         {"$match": query},
         {"$sort": {"date": 1}},
         {"$limit": count}
     ]
-    winners_docs = list(col_msg_reactions.aggregate(pipeline))
+    reactors_docs = list(col_msg_reactions.aggregate(pipeline))
     
-    if not winners_docs:
-        if display_emoji:
-            await message.answer(f"No one has reacted with {display_emoji} to that message yet!")
-        else:
-            await message.answer("No one has reacted to that message yet!")
+    if not reactors_docs:
+        await message.answer("No one has reacted to that message yet!")
         return
 
-    lines = ["🎉 <b>Giveaway Winner(s)!</b> 🎉\n"]
-    for doc in winners_docs:
+    # Determine valid emojis if specified
+    valid_emojis = []
+    if custom_emoji_id:
+        valid_emojis = [custom_emoji_id]
+    elif display_emoji:
+        base = display_emoji.replace("\ufe0f", "")
+        valid_emojis = [display_emoji, base, base + "\ufe0f"]
+
+    lines = [f"⏱ <b>Fastest Fingers (First {len(reactors_docs)})</b>\n"]
+    for i, doc in enumerate(reactors_docs):
         w_id = doc["user_id"]
         w_react = doc["reaction"]
         info = await resolve_user(w_id, bot)
@@ -1060,7 +1059,14 @@ async def cmd_uncover(message: types.Message):
         else:
             name_part = f'<a href="tg://user?id={w_id}">{display}</a>'
             
-        lines.append(f"🏆 {name_part} (Reacted with {w_react})")
+        react_display = "Premium Emoji" if str(w_react).isdigit() else w_react
+            
+        if not valid_emojis or w_react in valid_emojis:
+            status = "✅ Winner!"
+        else:
+            status = "❌ Wrong Emoji"
+            
+        lines.append(f"{i+1}. {name_part} — {react_display} {status}")
 
     await message.answer("\n".join(lines), parse_mode="HTML")
 
