@@ -319,7 +319,7 @@ async def process_help_callbacks(callback_query: CallbackQuery):
             "We only track reaction counts, user IDs, and message IDs. We do NOT read or store the actual content of your messages. "
             "All data is processed securely to provide you with the best analytics.\n\n"
             "<b>Developer Credits:</b>\n"
-            "Developed with ❤️ by the open-source community. If you love this bot, make sure to give us a star on GitHub!"
+            "Developed by <a href='https://t.me/commonthread'>Common Thread</a>."
         )
     elif action == "menu":
         text = (
