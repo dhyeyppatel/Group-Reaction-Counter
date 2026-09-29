@@ -1079,7 +1079,7 @@ async def on_reaction(reaction: types.MessageReactionUpdated):
                         alert_text = (
                             "⚠️ <b>Admin Alert: High Negative Sentiment</b>\n"
                             "A message in this group has suddenly received a high number of negative reactions.\n"
-                            f"<a href='https://t.me/c/{str(chat_id).replace('-100', '')}/{reaction.message_id}'>Go to message</a>"
+                            f"<a href='tg://privatepost?channel={str(chat_id).replace('-100', '')}&post={reaction.message_id}'>Go to message</a>"
                         )
                         try:
                             await bot.send_message(chat_id, alert_text, parse_mode="HTML")
