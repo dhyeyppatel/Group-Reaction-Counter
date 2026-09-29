@@ -116,6 +116,24 @@ These commands are restricted to the bot owner (configured via the `ADMIN_ID` en
 *Danger zone: Completely formats the MongoDB database.*
 - Wipes all reactions, chats, messages, and user history globally across all communities.
 
+#### 2. /maintenance on|off
+*Toggles the bot's maintenance mode.*
+- When ON, the bot stops tracking reactions and replies to user commands with an "under maintenance" message. The owner bypasses this restriction.
+
+#### 3. /bot_chats
+*Lists all groups and channels where the bot is currently active.*
+- Outputs a list of Chat IDs, Chat Titles, and Chat Types.
+
+#### 4. /bot_stats
+*Displays the total global stats across the entire database.*
+- Shows total active chats, total known users, and total reactions processed.
+
+#### 5. /force_leave <chat_id>
+*Forces the bot to leave a specific chat remotely using its Chat ID.*
+
+#### 6. /clean_chats
+*Wipes all reaction data, message histories, and cached chat states for any groups that the bot has left or been kicked from.*
+
 ---
 
 ## 🛠 Technical Details

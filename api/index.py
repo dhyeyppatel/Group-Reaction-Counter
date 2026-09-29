@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, types, BaseMiddleware
 from aiogram.types import Update, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from aiogram.filters import Command
 from pymongo import MongoClient
@@ -55,6 +55,17 @@ col_chats     = db.chats              if db is not None else None   # group/chan
 col_users     = db.users              if db is not None else None   # user display names
 col_msg_reactions = db.msg_reactions  if db is not None else None   # per-message reaction state
 col_milestones = db.milestones        if db is not None else None   # tracks awarded milestones
+col_config     = db.config            if db is not None else None   # global bot configuration
+
+def is_owner(user_id: int) -> bool:
+    admin_id = int(os.getenv("ADMIN_ID", 0))
+    return admin_id != 0 and user_id == admin_id
+
+def is_maintenance_mode() -> bool:
+    if col_config is None:
+        return False
+    doc = col_config.find_one({"_id": "global_config"})
+    return doc.get("maintenance_mode", False) if doc else False
 
 DEFAULT_SETTINGS = {
     "announcements": True,
@@ -188,6 +199,34 @@ async def resolve_user(uid, bot_instance=None) -> dict:
     return {"display_name": str(uid), "username": None}
 
 
+# ── Middlewares ──────────────────────────────────────────────────────────────
+
+class MaintenanceMiddleware(BaseMiddleware):
+    async def __call__(self, handler, event: Update, data: dict):
+        if is_maintenance_mode():
+            user_id = None
+            if event.message:
+                user_id = event.message.from_user.id
+            elif event.callback_query:
+                user_id = event.callback_query.from_user.id
+            elif event.message_reaction:
+                user_id = event.message_reaction.user.id
+            
+            if user_id and is_owner(user_id):
+                return await handler(event, data)
+                
+            if event.message and event.message.text and event.message.text.startswith("/"):
+                try:
+                    await event.message.answer("⚠️ The bot is currently under maintenance. Please try again later.")
+                except Exception:
+                    pass
+            return # Block update
+            
+        return await handler(event, data)
+
+dp.update.outer_middleware(MaintenanceMiddleware())
+
+
 # ── Bot Handlers ─────────────────────────────────────────────────────────────
 
 @dp.my_chat_member()
@@ -258,6 +297,107 @@ async def cmd_reset_db(message: types.Message):
         await message.reply("✅ Full database (including debug logs) has been completely reset/cleared.")
     except Exception as e:
         await message.reply(f"Error clearing database: {e}")
+
+# ── Owner Settings Handlers ──────────────────────────────────────────────────
+
+@dp.message(Command("maintenance"))
+async def cmd_maintenance(message: types.Message):
+    if not is_owner(message.from_user.id):
+        return
+    parts = message.text.split()
+    if len(parts) < 2 or parts[1].lower() not in ["on", "off"]:
+        current = "ON" if is_maintenance_mode() else "OFF"
+        await message.answer(f"Maintenance mode is currently {current}.\nUsage: /maintenance on|off")
+        return
+    
+    state = parts[1].lower() == "on"
+    if col_config is not None:
+        col_config.update_one({"_id": "global_config"}, {"$set": {"maintenance_mode": state}}, upsert=True)
+    await message.answer(f"✅ Maintenance mode turned {'ON' if state else 'OFF'}.")
+
+@dp.message(Command("bot_chats"))
+async def cmd_bot_chats(message: types.Message):
+    if not is_owner(message.from_user.id):
+        return
+    if col_chats is None:
+        return
+    chats = list(col_chats.find({"active": True}))
+    if not chats:
+        await message.answer("Bot is not active in any chats.")
+        return
+        
+    lines = [f"📊 <b>Active Chats ({len(chats)})</b>\n"]
+    for c in chats:
+        title = html.escape(c.get("title", str(c["chat_id"])))
+        ctype = c.get("type", "unknown")
+        lines.append(f"• <code>{c['chat_id']}</code> - {title} ({ctype})")
+        
+    text = "\n".join(lines)
+    for i in range(0, len(text), 4000):
+        await message.answer(text[i:i+4000], parse_mode="HTML")
+
+@dp.message(Command("bot_stats"))
+async def cmd_bot_stats(message: types.Message):
+    if not is_owner(message.from_user.id):
+        return
+    if db is None:
+        return
+        
+    total_chats = col_chats.count_documents({"active": True})
+    total_users = col_users.count_documents({})
+    pipeline = [
+        {"$match": {"user_id": "GLOBAL"}},
+        {"$group": {"_id": None, "total": {"$sum": "$count"}}}
+    ]
+    res = list(col_reactions.aggregate(pipeline))
+    total_rxns = res[0]["total"] if res else 0
+    
+    msg = (
+        "📈 <b>Global Bot Stats</b>\n\n"
+        f"👥 Active Chats: <b>{total_chats}</b>\n"
+        f"👤 Known Users: <b>{total_users}</b>\n"
+        f"❤️ Total Reactions Processed: <b>{total_rxns:,}</b>\n"
+    )
+    await message.answer(msg, parse_mode="HTML")
+
+@dp.message(Command("force_leave"))
+async def cmd_force_leave(message: types.Message):
+    if not is_owner(message.from_user.id):
+        return
+    parts = message.text.split()
+    if len(parts) < 2:
+        await message.answer("Usage: /force_leave <chat_id>")
+        return
+    try:
+        chat_id = int(parts[1])
+        await bot.leave_chat(chat_id)
+        if col_chats is not None:
+            col_chats.update_one({"chat_id": chat_id}, {"$set": {"active": False}})
+        await message.answer(f"✅ Successfully left chat {chat_id}.")
+    except Exception as e:
+        await message.answer(f"❌ Failed to leave chat: {e}")
+
+@dp.message(Command("clean_chats"))
+async def cmd_clean_chats(message: types.Message):
+    if not is_owner(message.from_user.id):
+        return
+    if col_chats is None:
+        return
+    
+    inactive_chats = list(col_chats.find({"active": False}))
+    if not inactive_chats:
+        await message.answer("No inactive chats found.")
+        return
+        
+    count = 0
+    for c in inactive_chats:
+        chat_id = c["chat_id"]
+        col_reactions.delete_many({"chat_id": chat_id})
+        col_msg_reactions.delete_many({"chat_id": chat_id})
+        col_chats.delete_one({"chat_id": chat_id})
+        count += 1
+        
+    await message.answer(f"✅ Cleaned up {count} inactive chats and their data.")
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
