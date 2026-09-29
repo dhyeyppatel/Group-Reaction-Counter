@@ -442,17 +442,17 @@ async def cmd_show(message: types.Message):
         {"$match": {"user_id": "GLOBAL", "count": {"$gt": 0}}},
         {"$group": {"_id": "$chat_id", "total": {"$sum": "$count"}}},
         {"$sort": {"total": -1}},
-        {"$limit": 50}
+        {"$limit": 200}
     ]))
 
     if not results:
         await message.answer("No group data yet. Add me to some groups and let people react!")
         return
 
-    medals = ["🥇", "🥈", "🥉"]
-    lines  = ["🌍 <b>Global Group Leaderboard</b>\n", "<blockquote expandable>"]
+    groups = []
+    channels = []
 
-    for i, r in enumerate(results):
+    for r in results:
         chat_id  = r["_id"]
         total    = r["total"]
         doc      = col_chats.find_one({"chat_id": chat_id}, {"_id": 0})
@@ -464,26 +464,57 @@ async def cmd_show(message: types.Message):
                 save_chat_meta(chat)
                 doc = col_chats.find_one({"chat_id": chat_id}, {"_id": 0})
             except Exception:
-                pass
+                continue
                 
-        medal    = medals[i] if i < 3 else f"{i + 1}."
-
-        if doc:
-            title    = html.escape(doc.get("title", str(chat_id)))
-            username = doc.get("username")
-            invite   = doc.get("invite_link")
-            if username:
-                name_part = f'<a href="https://t.me/{username}">{title}</a>'
-            elif invite:
-                name_part = f'<a href="{invite}">{title}</a>'
-            else:
-                name_part = title
+        if not doc:
+            continue
+            
+        chat_type = doc.get("type", "")
+        if chat_type == "private":
+            continue
+            
+        title    = html.escape(doc.get("title", str(chat_id)))
+        username = doc.get("username")
+        invite   = doc.get("invite_link")
+        
+        if username:
+            name_part = f'<a href="https://t.me/{username}">{title}</a>'
+        elif invite:
+            name_part = f'<a href="{invite}">{title}</a>'
         else:
-            name_part = str(chat_id)
+            name_part = title
+            
+        entry = {"name_part": name_part, "total": total}
+        
+        if chat_type == "channel":
+            if len(channels) < 50:
+                channels.append(entry)
+        else:
+            if len(groups) < 50:
+                groups.append(entry)
 
-        lines.append(f"{medal} {name_part} — {total} reactions")
+    medals = ["🥇", "🥈", "🥉"]
+    lines  = ["🌍 <b>Global Group Leaderboard</b>\n<blockquote expandable>"]
+
+    if not groups:
+        lines.append("No active groups yet.")
+    else:
+        for i, g in enumerate(groups):
+            medal = medals[i] if i < 3 else f"{i + 1}."
+            lines.append(f"{medal} {g['name_part']} — {g['total']} reactions")
+            
+    lines.append("</blockquote>\n")
     
+    lines.append("📢 <b>Global Channel Leaderboard</b>\n<blockquote expandable>")
+    if not channels:
+        lines.append("No active channels yet.")
+    else:
+        for i, c in enumerate(channels):
+            medal = medals[i] if i < 3 else f"{i + 1}."
+            lines.append(f"{medal} {c['name_part']} — {c['total']} reactions")
+            
     lines.append("</blockquote>")
+
     await message.answer("\n".join(lines), parse_mode="HTML")
 
 
