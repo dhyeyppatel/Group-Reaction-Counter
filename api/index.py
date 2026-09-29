@@ -1007,20 +1007,31 @@ async def cmd_uncover(message: types.Message):
     # Parse args: /uncover [count] [emoji]
     parts = message.text.split()
     count = 1
-    target_emoji = None
+    display_emoji = None
     
     for part in parts[1:]:
         if part.isdigit():
             count = min(int(part), 50)
         else:
-            target_emoji = part
+            display_emoji = part
+
+    custom_emoji_id = None
+    if message.entities:
+        for ent in message.entities:
+            if ent.type == "custom_emoji":
+                custom_emoji_id = ent.custom_emoji_id
+                break
 
     chat_id = message.chat.id
     msg_id = message.reply_to_message.message_id
 
     query = {"chat_id": chat_id, "message_id": msg_id, "active": True}
-    if target_emoji:
-        query["reaction"] = target_emoji
+    
+    if custom_emoji_id:
+        query["reaction"] = custom_emoji_id
+    elif display_emoji:
+        base = display_emoji.replace("\ufe0f", "")
+        query["reaction"] = {"$in": [display_emoji, base, base + "\ufe0f"]}
         
     pipeline = [
         {"$match": query},
@@ -1030,8 +1041,8 @@ async def cmd_uncover(message: types.Message):
     winners_docs = list(col_msg_reactions.aggregate(pipeline))
     
     if not winners_docs:
-        if target_emoji:
-            await message.answer(f"No one has reacted with {target_emoji} to that message yet!")
+        if display_emoji:
+            await message.answer(f"No one has reacted with {display_emoji} to that message yet!")
         else:
             await message.answer("No one has reacted to that message yet!")
         return
