@@ -137,6 +137,7 @@ def save_chat_meta(chat):
             "title":    getattr(chat, "title", None) or getattr(chat, "first_name", str(chat.id)),
             "type":     chat.type,
             "username": getattr(chat, "username", None),
+            "active":   True,
         }},
         upsert=True
     )
