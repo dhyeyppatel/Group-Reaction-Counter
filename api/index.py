@@ -993,7 +993,8 @@ async def cmd_uncover(message: types.Message):
         
     pipeline = [
         {"$match": query},
-        {"$sample": {"size": count}}
+        {"$sort": {"date": 1}},
+        {"$limit": count}
     ]
     winners_docs = list(col_msg_reactions.aggregate(pipeline))
     

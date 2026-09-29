@@ -17,7 +17,7 @@ A real-time Telegram engagement leaderboard bot that tracks user reactions, rank
 
 3. **Reaction Giveaways (The Uncover Feature)**
    - Admins can host giveaways by asking users to react to a specific message.
-   - The bot accurately tracks per-message reactions and can fairly pick 1 or more random winners directly from the people who reacted.
+   - The bot accurately tracks per-message reactions and can pick the first 1 or more people who reacted.
 
 4. **Gamification & Custom Titles**
    - Users unlock exclusive titles based on their total reaction count (e.g., 100+ = Trend Setter 💫).
@@ -59,8 +59,8 @@ These commands are meant to be used inside your group or channel.
 - **Output:** A densely packed, highly formatted `<blockquote expandable>` containing the top 50 users and their reaction counts.
 
 #### 3. /uncover <emoji>
-*Randomly picks a winner from people who reacted to the message you reply to!*
-- **How to use:** Reply to a message with `/uncover 🎉` to pick a random user who reacted with 🎉 to that message.
+*Picks the first person(s) who reacted to the message you reply to!*
+- **How to use:** Reply to a message with `/uncover 🎉` to pick the first user who reacted with 🎉 to that message.
 
 #### 4. /roles
 *Lists all the unlockable reaction titles.*
