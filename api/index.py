@@ -1316,7 +1316,7 @@ async def api_global_data():
         {"$match": {"user_id": "GLOBAL", "count": {"$gt": 0}}},
         {"$group": {"_id": "$chat_id", "total": {"$sum": "$count"}}},
         {"$sort": {"total": -1}},
-        {"$limit": 50}
+        {"$limit": 200}
     ]))
 
     combined = []
@@ -1332,30 +1332,33 @@ async def api_global_data():
             except Exception:
                 pass
                 
-        # Don't show inactive chats on dashboard
-        if doc and doc.get("active") is False:
+        if not doc:
             continue
             
-        settings = doc.get("settings", DEFAULT_SETTINGS) if doc else DEFAULT_SETTINGS
+        # Don't show inactive chats on dashboard
+        if doc.get("active") is False:
+            continue
+            
+        settings = doc.get("settings", DEFAULT_SETTINGS)
         if not settings.get("global_leaderboard", True):
             continue
             
-        chat_type = "group"
-        entry   = {"chat_id": chat_id, "total": r["total"], "title": str(chat_id), "url": None, "type": chat_type}
-        
-        if doc:
-            entry["title"]    = doc.get("title", str(chat_id))
-            username          = doc.get("username")
-            invite            = doc.get("invite_link")
-            entry["url"]      = f"https://t.me/{username}" if username else invite
-            if doc.get("type") == "channel":
-                entry["type"] = "channel"
+        if doc.get("type") == "private":
+            continue
             
+        chat_type = "channel" if doc.get("type") == "channel" else "group"
+        
+        title    = doc.get("title", str(chat_id))
+        username = doc.get("username")
+        invite   = doc.get("invite_link")
+        url      = f"https://t.me/{username}" if username else invite
+            
+        entry   = {"chat_id": chat_id, "total": r["total"], "title": title, "url": url, "type": chat_type}
         combined.append(entry)
 
     # Sort combined list
     combined.sort(key=lambda x: x["total"], reverse=True)
-    return {"chats": combined[:20]}
+    return {"chats": combined[:100]}
 
 
 @app.get("/api/group_data/{chat_id}")
