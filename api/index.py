@@ -38,6 +38,7 @@ async def on_startup():
         BotCommand(command="setinvite", description="(Admin) Attach a group invite link for the dashboard"),
         BotCommand(command="forcewrapped", description="(Admin) Trigger the Weekly Wrapped report"),
         BotCommand(command="settings", description="(Admin) Manage group settings"),
+        BotCommand(command="leave", description="(Admin) Make the bot leave the group"),
         BotCommand(command="audit", description="(PM) Get an engagement audit for a group"),
         BotCommand(command="uncover", description="Reply to pick a winner from reactions")
     ]
@@ -1019,6 +1020,48 @@ async def cmd_uncover(message: types.Message):
         lines.append(f"🏆 {name_part} (Reacted with {w_react})")
 
     await message.answer("\n".join(lines), parse_mode="HTML")
+
+
+@dp.message(Command("leave"))
+async def cmd_leave(message: types.Message):
+    if message.chat.type == "private":
+        await message.answer("This command can only be used in groups.")
+        return
+        
+    member = await bot.get_chat_member(message.chat.id, message.from_user.id)
+    if member.status not in ("administrator", "creator"):
+        await message.answer("❌ Only group admins can use this command.")
+        return
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="Yes, leave", callback_data="leave_confirm"),
+            InlineKeyboardButton(text="Cancel", callback_data="leave_cancel")
+        ]
+    ])
+    await message.answer("⚠️ I will leave this chat. Are you sure?", reply_markup=keyboard)
+
+
+@dp.callback_query(lambda c: c.data in ["leave_confirm", "leave_cancel"])
+async def process_leave_callback(callback_query: CallbackQuery):
+    chat_id = callback_query.message.chat.id
+    if callback_query.message.chat.type == "private":
+        await callback_query.answer()
+        return
+        
+    member = await bot.get_chat_member(chat_id, callback_query.from_user.id)
+    if member.status not in ("administrator", "creator"):
+        await callback_query.answer("Only admins can confirm this.", show_alert=True)
+        return
+
+    if callback_query.data == "leave_confirm":
+        await callback_query.message.edit_text("Goodbye! 👋 Leaving the chat now...")
+        await bot.leave_chat(chat_id)
+        if col_chats is not None:
+            col_chats.update_one({"chat_id": chat_id}, {"$set": {"active": False}})
+    else:
+        await callback_query.message.edit_text("Leaving cancelled. I'm staying! 🎉")
+        await callback_query.answer()
 
 
 @dp.message_reaction()

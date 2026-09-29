@@ -90,6 +90,9 @@ These commands are meant to be used inside your group or channel.
 #### 12. /settings
 *Manage group-specific features via an interactive menu (Announcements, Weekly Wrapped, Leaderboard Privacy, Sentiment Alerts, Minimal Mode, Language).* (Admin Command)
 
+#### 13. /leave
+*Prompts the bot to leave the group chat after confirmation.* (Admin Command)
+
 ### 👤 Private Message (PM) Commands
 These commands are meant to be used in a direct message with the bot.
 
