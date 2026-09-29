@@ -469,6 +469,13 @@ async def cmd_show(message: types.Message):
         if not doc:
             continue
             
+        if doc.get("active") is False:
+            continue
+            
+        settings = doc.get("settings", DEFAULT_SETTINGS)
+        if not settings.get("global_leaderboard", True):
+            continue
+            
         chat_type = doc.get("type", "")
         if chat_type == "private":
             continue
