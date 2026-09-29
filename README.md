@@ -79,13 +79,16 @@ These commands are meant to be used inside your group or channel.
 *Shows a visual breakdown of the group's emotional pulse as a beautiful bar graph.*
 
 #### 9. /top
-*Highlights the most highly reacted message of the day in the group.*
+*Highlights the top 10 most highly reacted messages of the day in the group.*
 
 #### 10. /setinvite <url>
 *Attaches a join link to a private group so it can be clicked on the Global Web Leaderboard.* (Admin Command)
 
 #### 11. /forcewrapped
 *Manually triggers the Weekly Wrapped report for testing.* (Admin Command)
+
+#### 12. /settings
+*Manage group-specific features via an interactive menu (Announcements, Weekly Wrapped, Leaderboard Privacy, Sentiment Alerts, Minimal Mode, Language).* (Admin Command)
 
 ### 👤 Private Message (PM) Commands
 These commands are meant to be used in a direct message with the bot.

@@ -37,6 +37,7 @@ async def on_startup():
         BotCommand(command="top", description="Discover the most highly reacted message today"),
         BotCommand(command="setinvite", description="(Admin) Attach a group invite link for the dashboard"),
         BotCommand(command="forcewrapped", description="(Admin) Trigger the Weekly Wrapped report"),
+        BotCommand(command="settings", description="(Admin) Manage group settings"),
         BotCommand(command="audit", description="(PM) Get an engagement audit for a group"),
         BotCommand(command="uncover", description="Reply to pick a winner from reactions")
     ]
@@ -53,6 +54,15 @@ col_chats     = db.chats              if db is not None else None   # group/chan
 col_users     = db.users              if db is not None else None   # user display names
 col_msg_reactions = db.msg_reactions  if db is not None else None   # per-message reaction state
 col_milestones = db.milestones        if db is not None else None   # tracks awarded milestones
+
+DEFAULT_SETTINGS = {
+    "announcements": True,
+    "weekly_wrapped": True,
+    "global_leaderboard": True,
+    "sentiment_alerts": True,
+    "minimal_mode": False,
+    "language": "en"
+}
 
 # ── Sentiment & Mood ─────────────────────────────────────────────────────────
 POSITIVE_EMOJIS = {
@@ -371,23 +381,31 @@ async def cmd_stats(message: types.Message):
         await message.answer("No reactions recorded yet in this group. React to some messages first!")
         return
 
-    lines = [f"📊 <b>{html.escape(chat_title)} — Reaction Stats</b>\n"]
+    chat_doc = col_chats.find_one({"chat_id": chat_id}, {"_id": 0}) if col_chats is not None else None
+    settings = chat_doc.get("settings", DEFAULT_SETTINGS) if chat_doc else DEFAULT_SETTINGS
+    lang = settings.get("language", "en")
+    is_minimal = settings.get("minimal_mode", False)
+    
+    title_text = "Estadísticas de Reacciones" if lang == "es" else "Statistiques de Réactions" if lang == "fr" else "Reaction Stats"
+    lines = [f"📊 <b>{html.escape(chat_title)} — {title_text}</b>\n"]
 
-    if emoji_results:
+    if emoji_results and not is_minimal:
         total = sum(r["count"] for r in emoji_results)
         lines.append("<blockquote expandable>")
-        lines.append("🎭 <b>Emoji Leaderboard:</b>")
+        emoji_title = "Clasificación de Emojis:" if lang == "es" else "Classement des Emojis:" if lang == "fr" else "Emoji Leaderboard:"
+        lines.append(f"🎭 <b>{emoji_title}</b>")
         for r in emoji_results:
             lines.append(f"  {r['reaction']}  {r['count']}")
-        lines.append(f"  ┄ Total: <b>{total}</b>")
+        total_text = "Total"
+        lines.append(f"  ┄ {total_text}: <b>{total}</b>")
         lines.append("</blockquote>\n")
 
     if user_results:
         medals = ["🥇", "🥈", "🥉"]
         lines.append("<blockquote expandable>")
-        lines.append("🏆 <b>Top Reactors in this Group:</b>")
+        users_title = "Mejores Reactores:" if lang == "es" else "Meilleurs Réacteurs:" if lang == "fr" else "Top Reactors in this Group:"
+        lines.append(f"🏆 <b>{users_title}</b>")
         
-        chat_doc = col_chats.find_one({"chat_id": chat_id}, {"_id": 0}) if col_chats is not None else None
         roles = get_roles_for_chat(chat_doc)
         
         for i, u in enumerate(user_results):
@@ -686,7 +704,7 @@ async def cmd_top(message: types.Message):
         {"$match": {"chat_id": chat_id, "active": True, "date": {"$gte": one_day_ago}}},
         {"$group": {"_id": "$message_id", "total": {"$sum": 1}}},
         {"$sort": {"total": -1}},
-        {"$limit": 1}
+        {"$limit": 10}
     ]
     
     results = list(col_msg_reactions.aggregate(pipeline))
@@ -694,20 +712,23 @@ async def cmd_top(message: types.Message):
         await message.answer("No reactions recorded in the last 24 hours.")
         return
         
-    top_msg_id = results[0]["_id"]
-    total_rxn = results[0]["total"]
-    
     chat_doc = col_chats.find_one({"chat_id": chat_id}) if col_chats is not None else None
-    if chat_doc and chat_doc.get("username"):
-        link = f"https://t.me/{chat_doc['username']}/{top_msg_id}"
-    else:
-        clean_chat_id = str(chat_id).replace("-100", "")
-        link = f"https://t.me/c/{clean_chat_id}/{top_msg_id}"
-        
+    
     lines = [
-        "🏆 <b>Top Post of the Day</b> 🏆\n",
-        f"This <a href='{link}'>message</a> is on fire today with <b>{total_rxn}</b> reactions! 🔥"
+        "🏆 <b>Top 10 Posts of the Day</b> 🏆\n"
     ]
+    
+    for i, res in enumerate(results):
+        msg_id = res["_id"]
+        total_rxn = res["total"]
+        
+        if chat_doc and chat_doc.get("username"):
+            link = f"https://t.me/{chat_doc['username']}/{msg_id}"
+        else:
+            clean_chat_id = str(chat_id).replace("-100", "")
+            link = f"https://t.me/c/{clean_chat_id}/{msg_id}"
+            
+        lines.append(f"{i+1}. <a href='{link}'>Message</a> — <b>{total_rxn}</b> reactions 🔥")
     
     await message.answer("\n".join(lines), parse_mode="HTML")
 
@@ -740,6 +761,96 @@ async def cmd_setinvite(message: types.Message):
             upsert=True
         )
     await message.answer("Invite link saved! Your group now appears as a clickable link in the Global Leaderboard.")
+
+
+@dp.message(Command("settings"))
+async def cmd_settings(message: types.Message):
+    """Manage group settings."""
+    if message.chat.type == "private":
+        await message.answer("Settings are only available in groups.")
+        return
+        
+    member = await bot.get_chat_member(message.chat.id, message.from_user.id)
+    if member.status not in ("administrator", "creator"):
+        await message.answer("❌ Only group admins can manage settings.")
+        return
+
+    chat_doc = col_chats.find_one({"chat_id": message.chat.id}) if col_chats is not None else {}
+    settings = chat_doc.get("settings", DEFAULT_SETTINGS)
+    
+    # Ensure all default keys exist
+    for k, v in DEFAULT_SETTINGS.items():
+        if k not in settings:
+            settings[k] = v
+
+    def toggle_str(val):
+        return "✅ On" if val else "❌ Off"
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=f"Level-up Announcements: {toggle_str(settings['announcements'])}", callback_data="set_announcements")],
+        [InlineKeyboardButton(text=f"Weekly Wrapped: {toggle_str(settings['weekly_wrapped'])}", callback_data="set_weekly_wrapped")],
+        [InlineKeyboardButton(text=f"Global Leaderboard: {toggle_str(settings['global_leaderboard'])}", callback_data="set_global_leaderboard")],
+        [InlineKeyboardButton(text=f"Sentiment Alerts: {toggle_str(settings['sentiment_alerts'])}", callback_data="set_sentiment_alerts")],
+        [InlineKeyboardButton(text=f"Minimal Mode: {toggle_str(settings['minimal_mode'])}", callback_data="set_minimal_mode")],
+        [InlineKeyboardButton(text=f"Language: {settings['language'].upper()}", callback_data="set_language")]
+    ])
+    
+    await message.answer("⚙️ <b>Group Settings</b>\nClick to toggle:", parse_mode="HTML", reply_markup=keyboard)
+
+
+@dp.callback_query(lambda c: c.data and c.data.startswith('set_'))
+async def process_settings_callback(callback_query: CallbackQuery):
+    chat_id = callback_query.message.chat.id
+    if callback_query.message.chat.type == "private":
+        await callback_query.answer("Settings are only for groups.")
+        return
+        
+    member = await bot.get_chat_member(chat_id, callback_query.from_user.id)
+    if member.status not in ("administrator", "creator"):
+        await callback_query.answer("Only admins can change settings.", show_alert=True)
+        return
+
+    key = callback_query.data.replace("set_", "")
+    
+    chat_doc = col_chats.find_one({"chat_id": chat_id}) or {}
+    settings = chat_doc.get("settings", DEFAULT_SETTINGS.copy())
+    
+    # Ensure all default keys exist
+    for k, v in DEFAULT_SETTINGS.items():
+        if k not in settings:
+            settings[k] = v
+
+    if key == "language":
+        langs = ["en", "es", "fr"]
+        try:
+            idx = langs.index(settings["language"])
+            settings["language"] = langs[(idx + 1) % len(langs)]
+        except ValueError:
+            settings["language"] = "en"
+    elif key in settings:
+        settings[key] = not settings[key]
+        
+    if col_chats is not None:
+        col_chats.update_one(
+            {"chat_id": chat_id},
+            {"$set": {"settings": settings}},
+            upsert=True
+        )
+        
+    def toggle_str(val):
+        return "✅ On" if val else "❌ Off"
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=f"Level-up Announcements: {toggle_str(settings.get('announcements', True))}", callback_data="set_announcements")],
+        [InlineKeyboardButton(text=f"Weekly Wrapped: {toggle_str(settings.get('weekly_wrapped', True))}", callback_data="set_weekly_wrapped")],
+        [InlineKeyboardButton(text=f"Global Leaderboard: {toggle_str(settings.get('global_leaderboard', True))}", callback_data="set_global_leaderboard")],
+        [InlineKeyboardButton(text=f"Sentiment Alerts: {toggle_str(settings.get('sentiment_alerts', True))}", callback_data="set_sentiment_alerts")],
+        [InlineKeyboardButton(text=f"Minimal Mode: {toggle_str(settings.get('minimal_mode', False))}", callback_data="set_minimal_mode")],
+        [InlineKeyboardButton(text=f"Language: {settings.get('language', 'en').upper()}", callback_data="set_language")]
+    ])
+    
+    await callback_query.message.edit_reply_markup(reply_markup=keyboard)
+    await callback_query.answer("Setting updated!")
 
 
 @dp.message(Command("roles"))
@@ -954,23 +1065,26 @@ async def on_reaction(reaction: types.MessageReactionUpdated):
             
             # Sentiment Alert Check
             if r in NEGATIVE_EMOJIS:
-                neg_count = col_msg_reactions.count_documents({
-                    "chat_id": chat_id, 
-                    "message_id": reaction.message_id, 
-                    "reaction": {"$in": list(NEGATIVE_EMOJIS)},
-                    "active": True
-                })
-                # Alert at exactly 10 to avoid spamming
-                if neg_count == 10:
-                    alert_text = (
-                        "⚠️ <b>Admin Alert: High Negative Sentiment</b>\n"
-                        "A message in this group has suddenly received a high number of negative reactions.\n"
-                        f"<a href='https://t.me/c/{str(chat_id).replace('-100', '')}/{reaction.message_id}'>Go to message</a>"
-                    )
-                    try:
-                        await bot.send_message(chat_id, alert_text, parse_mode="HTML")
-                    except Exception:
-                        pass
+                chat_doc_for_sentiment = col_chats.find_one({"chat_id": chat_id}) if col_chats is not None else {}
+                settings_for_sentiment = chat_doc_for_sentiment.get("settings", DEFAULT_SETTINGS)
+                if settings_for_sentiment.get("sentiment_alerts", True):
+                    neg_count = col_msg_reactions.count_documents({
+                        "chat_id": chat_id, 
+                        "message_id": reaction.message_id, 
+                        "reaction": {"$in": list(NEGATIVE_EMOJIS)},
+                        "active": True
+                    })
+                    # Alert at exactly 10 to avoid spamming
+                    if neg_count == 10:
+                        alert_text = (
+                            "⚠️ <b>Admin Alert: High Negative Sentiment</b>\n"
+                            "A message in this group has suddenly received a high number of negative reactions.\n"
+                            f"<a href='https://t.me/c/{str(chat_id).replace('-100', '')}/{reaction.message_id}'>Go to message</a>"
+                        )
+                        try:
+                            await bot.send_message(chat_id, alert_text, parse_mode="HTML")
+                        except Exception:
+                            pass
 
     if added and col_milestones is not None:
         try:
@@ -1004,11 +1118,25 @@ async def on_reaction(reaction: types.MessageReactionUpdated):
                             
                         group_name = html.escape(reaction.chat.title or "the group")
                         
-                        group_msg = f"🎉 <b>Level Up!</b>\n{user_link} just reached <b>{user_total}</b> reactions and unlocked the title:\n\n🏆 <b>{new_title}</b>"
-                        try:
-                            await bot.send_message(chat_id, group_msg, parse_mode="HTML")
-                        except Exception:
-                            pass
+                        settings = chat_doc.get("settings", DEFAULT_SETTINGS) if chat_doc else DEFAULT_SETTINGS
+                        if settings.get("announcements", True):
+                            lang = settings.get("language", "en")
+                            is_minimal = settings.get("minimal_mode", False)
+                            
+                            if lang == "es":
+                                group_msg = f"🎉 <b>¡Nivel Subido!</b>\n{user_link} alcanzó <b>{user_total}</b> reacciones y desbloqueó el título:\n\n🏆 <b>{new_title}</b>"
+                            elif lang == "fr":
+                                group_msg = f"🎉 <b>Niveau Supérieur!</b>\n{user_link} a atteint <b>{user_total}</b> réactions et débloqué le titre:\n\n🏆 <b>{new_title}</b>"
+                            else:
+                                group_msg = f"🎉 <b>Level Up!</b>\n{user_link} just reached <b>{user_total}</b> reactions and unlocked the title:\n\n🏆 <b>{new_title}</b>"
+                            
+                            if is_minimal:
+                                group_msg = f"🏆 {user_link} -> <b>{new_title}</b> ({user_total})"
+
+                            try:
+                                await bot.send_message(chat_id, group_msg, parse_mode="HTML")
+                            except Exception:
+                                pass
                             
                         pm_msg = f"🎉 <b>Congratulations!</b>\nYou just reached <b>{user_total}</b> reactions in <b>{group_name}</b> and unlocked a new role!\n\n🏆 <b>{new_title}</b>"
                         try:
@@ -1114,6 +1242,10 @@ async def api_global_data():
                 
         # Don't show inactive chats on dashboard
         if doc and doc.get("active") is False:
+            continue
+            
+        settings = doc.get("settings", DEFAULT_SETTINGS) if doc else DEFAULT_SETTINGS
+        if not settings.get("global_leaderboard", True):
             continue
             
         chat_type = "group"
@@ -1242,6 +1374,10 @@ async def cron_wrapped():
         chat_doc = col_chats.find_one({"chat_id": chat_id}) if col_chats is not None else None
         chat_title = html.escape(chat_doc.get("title", "this group")) if chat_doc else "this group"
         
+        settings = chat_doc.get("settings", DEFAULT_SETTINGS) if chat_doc else DEFAULT_SETTINGS
+        if not settings.get("weekly_wrapped", True):
+            continue
+            
         msg = (
             "🎁 <b>WEEKLY WRAPPED</b> 🎁\n\n"
             f"This week, <b>{chat_title}</b> had <b>{total_rxn:,}</b> reactions!\n"
